@@ -1,0 +1,6 @@
+*.log
+**/.DS_Store
+**/.ipynb_checkpoints
+*.h5
+*.caffemodel
+*.t7
