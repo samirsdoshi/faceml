@@ -1,14 +1,14 @@
 ## Description
 
 The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
-using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I delete the remaining images from phone/camera without losing family pictures. 
+using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures. 
 
 ## Setup
 
 * Download docker from docker hub using 
 ` docker pull samirsdoshi/faceml:latest `
- OR build image locally by running build-image.sh
-* Copy large model files  
+ OR  
+* Build image locally by running build-image.sh and copy large model files  
 a) Download a converted darknet YOLO model to keras [here](https://drive.google.com/drive/folders/1YHYPsN4BnXz408_SY9Mo0G4Z2cSR0WCG?usp=sharing) and copy to yolo_keras/yolo.h5. This is used in OD.py for object detection  
 b) Download keras-facenet from [here](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) and copy under keras-facenet. This is used for face detection in FDTrain_keras.py and FDDetect_keras.py  
 c) Download a Torch deep learning model which produces the 128-D facial embeddings [here](https://storage.cmusatyalab.org/openface-models/nn4.small2.v1.t7) file and save as opencv/openface_nn4.small2.v1.t7.  
@@ -68,6 +68,7 @@ optional arguments:
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
 ```
+See [example](faceml/sampleimages/extractfaces/README.md)
 * To train model (using Keras/Facenet)
 ```
 root@b31ba7fcbfc1:/faceml# python FDTrain_keras.py --help

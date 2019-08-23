@@ -21,6 +21,7 @@ logfile="faceml.log"
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store face images")
+ap.add_argument("-m", "--margin", required=False,  nargs='?', const=20, type=int, default=20, help="Margin percentage to include around the face.")
 ap.add_argument("-l", "--logdir", required=True, help="path to log directory")
 
 args = vars(ap.parse_args())
@@ -97,7 +98,7 @@ for image_file in os.listdir(args["imagesdir"]):
     # Load image
     img_path = os.path.join(args["imagesdir"], image_file)
     writelog(flog, img_path)
-    faces = extract_all_faces(model, img_path, 20)
+    faces = extract_all_faces(model, img_path, int(args["margin"]))
     if (faces is None):
         continue
     for i in range(len(faces)):
