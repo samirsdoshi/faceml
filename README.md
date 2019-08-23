@@ -8,12 +8,12 @@ using potrait images/faces of people from my family and then sorted out images c
 * Download docker from docker hub using 
 ` docker pull samirsdoshi/faceml:latest `
  OR build image locally by running build-image.sh
-* Copy large model files
-a) Download a converted darknet YOLO model to keras [here](https://drive.google.com/drive/folders/1YHYPsN4BnXz408_SY9Mo0G4Z2cSR0WCG?usp=sharing) and copy to yolo_keras/yolo.h5. This is used in OD.py for object detection
-b) Download keras-facenet from [here](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) and copy under keras-facenet. This is used for face detection in FDTrain_keras.py and FDDetect_keras.py
-c) Download a Torch deep learning model which produces the 128-D facial embeddings [here](https://storage.cmusatyalab.org/openface-models/nn4.small2.v1.t7) file and save as opencv/openface_nn4.small2.v1.t7. 
-d) Also download a pre-trained Caffe deep learning model to detect faces [here](https://github.com/mmilovec/facedetectionOpenCV/blob/master/res10_300x300_ssd_iter_140000.caffemodel) and save as opencv/res10_300x300_ssd_iter_140000.caffemodel. 
-Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py
+* Copy large model files  
+a) Download a converted darknet YOLO model to keras [here](https://drive.google.com/drive/folders/1YHYPsN4BnXz408_SY9Mo0G4Z2cSR0WCG?usp=sharing) and copy to yolo_keras/yolo.h5. This is used in OD.py for object detection  
+b) Download keras-facenet from [here](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) and copy under keras-facenet. This is used for face detection in FDTrain_keras.py and FDDetect_keras.py  
+c) Download a Torch deep learning model which produces the 128-D facial embeddings [here](https://storage.cmusatyalab.org/openface-models/nn4.small2.v1.t7) file and save as opencv/openface_nn4.small2.v1.t7.  
+d) Also download a pre-trained Caffe deep learning model to detect faces [here](https://github.com/mmilovec/facedetectionOpenCV/blob/master/res10_300x300_ssd_iter_140000.caffemodel) and save as opencv/res10_300x300_ssd_iter_140000.caffemodel.   
+Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py  
 
 ## Usage
 * Setup a folder with images. for. e.g
@@ -135,16 +135,16 @@ optional arguments:
 
 ## Example
 I have the combined training/detection code as jupyter notebooks for both methods at
-* [FD_Keras](faceml/notebooks/FD_Keras.ipynb)
+* [FD_keras](faceml/notebooks/FD_keras.ipynb)
 * [FD_cv2](faceml/notebooks/FD_cv2.ipynb)
 
 ## Credits/References:
-https://pjreddie.com/darknet/yolo/
-https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/
-https://mc.ai/face-detection-with-opencv-and-deep-learning/
-https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/
-https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/
-http://cmusatyalab.github.io/openface/
-https://cmusatyalab.github.io/openface/models-and-accuracies/
+https://pjreddie.com/darknet/yolo/  
+https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/  
+https://mc.ai/face-detection-with-opencv-and-deep-learning/  
+https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/  
+https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/  
+http://cmusatyalab.github.io/openface/  
+https://cmusatyalab.github.io/openface/models-and-accuracies/  
 
 
