@@ -1,7 +1,7 @@
 ## Description
 
 The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
-using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures. 
+using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures and without spending a ton of time going through every image.
 
 The detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
 
