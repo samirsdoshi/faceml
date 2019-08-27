@@ -40,7 +40,8 @@ Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py
 * Run [faceml.sh](faceml.sh) to launch docker container. Change the volume line in faceml.sh to mount your directory with images. The container also runs jupyter notebook. It will wait for few seconds for the container to start. You can access the jupyter notebook from your browser using
 http://localhost:8888/?token=<i>token</i>
 * Run ` docker exec -it faceml bash `  to enter docker container
-* To detect objects and move images with objects in a seperate folder
+
+* To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
 root@b31ba7fcbfc1:/faceml# python OD.py --help
 usage: OD.py [-h] -i IMAGEDIR -c CLASS -o OUTDIR
