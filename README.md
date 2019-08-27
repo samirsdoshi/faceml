@@ -165,7 +165,8 @@ optional arguments:
                         h (hierarchical) or f (flat)
 ```
 ## Example
-I have the combined training/detection code as jupyter notebooks for both methods at
+I have the combined training/detection code as jupyter notebooks for both methods. Review the end of both files below for results. 
+
 * [FD_keras](faceml/notebooks/FD_keras.ipynb)
 * [FD_cv2](faceml/notebooks/FD_cv2.ipynb)
 
