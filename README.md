@@ -3,6 +3,8 @@
 The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
 using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures. 
 
+The detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
+
 ## Setup
 
 * Download docker from docker hub using 
@@ -41,15 +43,13 @@ http://localhost:8888/?token=<i>token</i>
 * To detect objects and move images with objects in a seperate folder
 ```
 root@b31ba7fcbfc1:/faceml# python OD.py --help
-Using TensorFlow backend.
 usage: OD.py [-h] -i IMAGEDIR -c CLASS -o OUTDIR
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGEDIR, --imagedir IMAGEDIR
                         path to input directory of images
   -c CLASS, --class CLASS
-                        object class to search for as per
-                        http://cocodataset.org/
+                        object class to search for as per yolo_keras/coco_classes.txt
   -o OUTDIR, --outdir OUTDIR
                         path to output directory with images having search
                         objects
@@ -58,13 +58,15 @@ optional arguments:
 ```
 root@b31ba7fcbfc1:/faceml# python ExtractFaces.py --help
 Using TensorFlow backend.
-usage: ExtractFaces.py [-h] -i IMAGESDIR -o OUTDIR -l LOGDIR
+usage: ExtractFaces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] -l LOGDIR
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGESDIR, --imagesdir IMAGESDIR
                         path to input directory of images
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store face images
+  -p [MARGIN], --margin [MARGIN]
+                        margin percentage pixels to include around the face
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
 ```
@@ -73,11 +75,13 @@ See [example](faceml/sampleimages/extractfaces/README.md)
 ```
 root@b31ba7fcbfc1:/faceml# python FDTrain_keras.py --help
 Using TensorFlow backend.
-usage: FDTrain_keras.py [-h] -t TRAINDIR -v VALDIR -o OUTDIR
+usage: FDTrain_keras.py [-h] -t TRAINDIR [-p [MARGIN]] -v VALDIR -o OUTDIR
 optional arguments:
   -h, --help            show this help message and exit
   -t TRAINDIR, --traindir TRAINDIR
                         path to input directory of images for training
+  -p [MARGIN], --margin [MARGIN]
+                        margin percentage pixels to include around the face
   -v VALDIR, --valdir VALDIR
                         path to input directory of images for training
   -o OUTDIR, --outdir OUTDIR
@@ -87,15 +91,18 @@ optional arguments:
 ```
 root@b31ba7fcbfc1:/faceml# python FDDetect_keras.py --help
 Using TensorFlow backend.
-usage: FDDetect_keras.py [-h] -t IMAGESDIR -m MODELPATH -c CLASS -o OUTDIR -l LOGDIR
+usage: FDDetect_keras.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
+                         -o OUTDIR -l LOGDIR
 optional arguments:
   -h, --help            show this help message and exit
-  -t IMAGESDIR, --imagesdir IMAGESDIR
+  -i IMAGESDIR, --imagesdir IMAGESDIR
                         path to input directory of images
   -m MODELPATH, --modelpath MODELPATH
                         directory with trained model
   -c CLASS, --class CLASS
-                        class name to filter
+                        class name to filter (class1,class2,...)
+  -p [MARGIN], --margin [MARGIN]
+                        margin percentage pixels to include around the face
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
@@ -105,35 +112,57 @@ optional arguments:
 * To train model (using OpenCV/Caffe)
 ```
 root@b31ba7fcbfc1:/faceml# python FDTrain_cv2.py --help
-usage: FDTrain_cv2.py [-h] -t TRAINDIR -v VALDIR -o OUTDIR
+usage: FDTrain_cv2.py [-h] -t TRAINDIR -v VALDIR [-p [MARGIN]] -o OUTDIR
 optional arguments:
   -h, --help            show this help message and exit
   -t TRAINDIR, --traindir TRAINDIR
                         path to input directory of images for training
   -v VALDIR, --valdir VALDIR
                         path to input directory of images for training
+  -p [MARGIN], --margin [MARGIN]
+                        margin percentage pixels to include around the face
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store trained model files
 ```
 * To detect faces and move files (using OpenCV/Caffe)
 ```
 root@b31ba7fcbfc1:/faceml# python FDDetect_cv2.py --help
-usage: FDDetect_cv2.py [-h] -t IMAGESDIR -m MODELPATH -c CLASS -o OUTDIR -l LOGDIR
+usage: FDDetect_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
+                       -o OUTDIR -l LOGDIR
 optional arguments:
   -h, --help            show this help message and exit
-  -t IMAGESDIR, --imagesdir IMAGESDIR
+  -i IMAGESDIR, --imagesdir IMAGESDIR
                         path to input directory of images
   -m MODELPATH, --modelpath MODELPATH
                         directory with trained model
   -c CLASS, --class CLASS
-                        class name to filter
+                        class name to filter (class1,class2,...)
+  -p [MARGIN], --margin [MARGIN]
+                        margin percentage pixels to include around the face
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
 ```
+* Utility to sort images into folders on year/month/day (hierachical or flat directories)
+```
+root@45df4a0417e8:/faceml# python SortImages.py --help
+Using TensorFlow backend.
+usage: SortImages.py [-h] -i IMAGEDIR -o OUTDIR -s SORTMODE -f FOLDERMODE
 
+optional arguments:
+  -h, --help            show this help message and exit
+  -i IMAGEDIR, --imagedir IMAGEDIR
+                        path to input directory of images for sorting
+  -o OUTDIR, --outdir OUTDIR
+                        path to output directory to store sorted files
+  -s SORTMODE, --sortmode SORTMODE
+                        sort mode (y,m,d,ym,ymd). Create folders by y (year),
+                        m (month), d (day), ym, ymd
+  -f FOLDERMODE, --foldermode FOLDERMODE
+                        h (hierarchical) or f (flat)
+```
 ## Example
 I have the combined training/detection code as jupyter notebooks for both methods at
 * [FD_keras](faceml/notebooks/FD_keras.ipynb)

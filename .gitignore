@@ -4,3 +4,5 @@
 *.h5
 *.caffemodel
 *.t7
+__pycache*
+*.pyc

@@ -17,17 +17,19 @@ from numpy import expand_dims
 from numpy import asarray
 from mtcnn.mtcnn import MTCNN
 from kerasutil import *
+from util import *
 
 model_path = "/faceml/keras-facenet/model/facenet_keras.h5"
 model_weights_path = "/faceml/keras-facenet/weights/facenet_keras_weights.h5"
-recognizer_file = "recognizer.pickle"
-labelencoder_file = "labelencoder.pickle"
+recognizer_file = "recognizer_keras.pickle"
+labelencoder_file = "labelencoder_keras.pickle"
 logfile="faceml.log"
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-t", "--imagesdir", required=True, help="path to input directory of images")
+ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
 ap.add_argument("-m", "--modelpath", required=True, help="directory with trained model")
-ap.add_argument("-c", "--class", required=True, help="class name to filter")
+ap.add_argument("-c", "--class", required=True, help="class name to filter (class1,class2,...)")
+ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
 ap.add_argument("-l", "--logdir", required=True, help="path to log directory")
 
@@ -40,7 +42,7 @@ def load_keras_model():
     return model
 
 # extract a single face from a given photograph
-def extract_all_faces(detector, filename, required_size=(160, 160)):
+def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
     print(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
@@ -48,37 +50,38 @@ def extract_all_faces(detector, filename, required_size=(160, 160)):
     # convert to array
     pixels = load_image(filename)
     if (pixels is None):
-        return (None,)*5
+        return None,None,None,None,None,None
     # detect faces in the image
     results = detector.detect_faces(pixels)
    # extract the bounding box from the first face
     if (len(results) > 0):
         for i in range(len(results)):
-            x=results[i]['box'][0]
-            y=results[i]['box'][1]
-            width=results[i]['box'][2]
-            height= results[i]['box'][3]
+            startX=results[i]['box'][0]
+            startY=results[i]['box'][1]
+            endX=startX + results[i]['box'][2]
+            endY= startY + results[i]['box'][3]
+            #x1[i], y1[i], width, height = results[i]['box']
             # bug fix
-            x,y = abs(x), abs(y)
-            # extract the face
-            face = pixels[y:y+height, x:x+width]
+            startX,startY = abs(startX), abs(startY)
+            if margin > 0:
+                startX,startY,endX,endY = addMargin(startX,startY,endX,endY,margin)
+            face = pixels[startY:endY, startX:endX]
             (fH, fW) = face.shape[:2]
             #print(i, x,y,width,height,fH,fW)
-            if fW < 20 or fH < 20:
+            if fW < 10 or fH < 10:
                 continue
-            x1.append(x)
-            y1.append(y)
-            x2.append(x + width)
-            y2.append(y + height)
+            x1.append(startX)
+            y1.append(startY)
+            x2.append(endX)
+            y2.append(endY)
             # resize pixels to the model size
             image = Image.fromarray(face)
             image = image.resize(required_size)
             face_array = asarray(image)
             faces.append(face_array)
-        return x1, y1, x2, y2, faces
+        return x1, y1, x2, y2, faces, pixels
     else:
-        return (None,)*5
-
+        return None,None,None,None,None,pixels
 
 
 # get the face embedding for one face
@@ -96,6 +99,33 @@ def get_embedding(model, face_pixels):
     #print("yhat:",yhat.shape, yhat[0])
     return yhat[0]    
 
+#retry prediction with different margins around the face.
+def retryPred(x1,y1,x2,y2,pixels,model,in_encoder,recognizer, required_size=(160, 160)):
+    maxProb=0
+    max_yhat_class=[]
+    max_yhat_prob=[]
+    for margin in (0,1,3,5):
+        startX,startY,endX,endY = addMargin(x1,y1,x2,y2,margin)
+        face = pixels[startY:endY,startX:endX]
+        image = Image.fromarray(face)
+        image = image.resize(required_size)
+        face_array = asarray(image)
+        embedding = get_embedding(model,face_array)
+        samples = in_encoder.transform(embedding.reshape(1,-1))
+        yhat_class = recognizer.predict(samples)
+        yhat_prob = recognizer.predict_proba(samples)
+        # get name
+        class_index = yhat_class[0]
+        class_probability = yhat_prob[0,class_index] * 100
+        if class_probability > maxProb:
+            max_yhat_prob=yhat_prob
+            max_yhat_class=yhat_class
+            maxProb = class_probability
+        if class_probability > 95:
+            break
+    return max_yhat_class, max_yhat_prob
+
+
 model =load_keras_model()
 detector = MTCNN()
 recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
@@ -105,38 +135,39 @@ imgcnt=1
 filesmoved=0
 flog=open(args["logdir"] + "/" + logfile,"w+")
 in_encoder = Normalizer(norm='l2')
+result=dict()
+classes=args["class"].split(",")
+for i in range(len(classes)):
+    result[classes[i]]=0
 for image_file in os.listdir(args["imagesdir"]):    
     # Load image
     img_path = os.path.join(args["imagesdir"], image_file)
-    x1, y1, x2, y2, faces = extract_all_faces(detector, img_path)
+    x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, img_path, int(args["margin"]))
     if (x1 is None):
         continue
-    print("candidate classes found:", len(x1))
+    flog.write(tostr("candidate classes found:", len(x1)))
     for i in range(len(faces)):
-        embedding = get_embedding(model, faces[i])
-        testX = in_encoder.transform(embedding.reshape(1,-1))
-        yhat_class = recognizer.predict(testX)
-        yhat_prob = recognizer.predict_proba(testX)
-        
+        yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)
         flog.write(tostr(yhat_class, yhat_prob))
-        
         class_index = yhat_class[0]
         proba = yhat_prob[0,class_index]
         predict_names = out_encoder.inverse_transform(yhat_class)
 
-        flog.write(tostr(predict_names))
+        flog.write(tostr(predict_names, proba))
 
         name = predict_names[0]
-        if (proba >=0.80 and name==args["class"]):
+        if (proba >=0.80 and name in classes):
             flog.write(tostr(i, "MATCH:",img_path, name, proba,"\n"))
             target_path = os.path.join(args["outdir"], image_file)
             flog.write(tostr("Moving ", img_path, " to ", target_path,"\n"))
             os.rename(img_path, target_path)
             filesmoved=filesmoved+1
+            result[name]=result[name]+1
             break
         else:
             flog.write(tostr(i, "NO MATCH:",img_path, name, proba,"\n"))
     flog.flush()
 
-flog.write(tostr(args["class"]," detected in ", filesmoved, " files","\n"))
+for i in range(len(classes)):
+    flog.write(tostr(classes[i]," detected in ", result[classes[i]], " files","\n"))
 flog.close()

@@ -22,6 +22,7 @@ labelencoder_file = "labelencoder_cv2.pickle"
 ap = argparse.ArgumentParser()
 ap.add_argument("-t", "--traindir", required=True, help="path to input directory of images for training")
 ap.add_argument("-v", "--valdir", required=True, help="path to input directory of images for training")
+ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store trained model files")
 args = vars(ap.parse_args())
 
@@ -47,7 +48,7 @@ def blob_from_image(imagearray):
     
 
 # extract a single face from a given photograph
-def extract_all_faces(model,filename):
+def extract_all_faces(model,filename, margin):
     print(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
@@ -71,6 +72,10 @@ def extract_all_faces(model,filename):
                 # object
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype("int")
+                startX = int(startX - (startX*margin/100))
+                endX = int(endX + (endX*margin/100))
+                startY = int(startY - (startY*margin/100))
+                endY = int(endY + (endY*margin/100))
                 face = image[startY:endY, startX:endX]
                 (fH, fW) = face.shape[:2]
                 if fW < 20 or fH < 20:
@@ -87,13 +92,13 @@ def extract_all_faces(model,filename):
         return (None,)*5
 
 # extract a single face from a given photograph
-def extract_face(model,filename):    
-    (x1,y1,x2,y2,faces) = extract_all_faces(model, filename)
+def extract_face(model,filename, margin):    
+    (x1,y1,x2,y2,faces) = extract_all_faces(model, filename, margin)
     if (x1 is None or len(x1)==0):
         return (None,)*5
     return x1[0],y1[0],x2[0],y2[0],faces[0]
 
-def load_faces(model, directory):
+def load_faces(model, directory, margin):
     faces = list()
     # enumerate files
     for filename in os.listdir(directory):
@@ -102,13 +107,13 @@ def load_faces(model, directory):
         # path
         path = directory + filename
         # get face
-        x1,y1,x2,y2,face = extract_face(model, path)
+        x1,y1,x2,y2,face = extract_face(model, path, margin)
         if face is not None:
             # store
             faces.append(face)
     return faces
 
-def load_dataset(model, directory):
+def load_dataset(model, directory, margin):
     X, y = list(), list()
     
     knownEmbeddings = []
@@ -124,7 +129,7 @@ def load_dataset(model, directory):
         if not isdir(path):
             continue
         # load all faces in the subdirectory
-        faces = load_faces(model,path)
+        faces = load_faces(model,path, margin)
         if (len(faces)>0):
             # create labels
             labels = [subdir for _ in range(len(faces))]
@@ -147,10 +152,10 @@ def load_dataset(model, directory):
 ## end of functions    
 model =load_facenet_model()
 print("Load trainings")
-trainY, trainX = load_dataset(model,args["traindir"])
+trainY, trainX = load_dataset(model,args["traindir"], int(args["margin"]))
 print(len(trainX), len(trainY))
 print("Load validations")
-testY, testX = load_dataset(model,args["valdir"])
+testY, testX = load_dataset(model,args["valdir"], int(args["margin"]))
 print(len(testX), len(testY))
 
 le = LabelEncoder()

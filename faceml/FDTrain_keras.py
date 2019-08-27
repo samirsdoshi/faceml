@@ -18,6 +18,7 @@ from numpy import expand_dims
 from numpy import asarray
 from mtcnn.mtcnn import MTCNN
 from kerasutil import *
+from util import *
 
 model_path = "/faceml/keras-facenet/model/facenet_keras.h5"
 model_weights_path = "/faceml/keras-facenet/weights/facenet_keras_weights.h5"
@@ -26,6 +27,7 @@ labelencoder_file = "labelencoder_keras.pickle"
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-t", "--traindir", required=True, help="path to input directory of images for training")
+ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
 ap.add_argument("-v", "--valdir", required=True, help="path to input directory of images for training")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store trained model files")
 args = vars(ap.parse_args())
@@ -37,14 +39,14 @@ def load_keras_model():
     model.load_weights(model_weights_path)
     return model
 
-def extract_face(detector, filename):    
-    x1,y1,x2,y2,faces = extract_all_faces(detector, filename)
+def extract_face(detector, filename, margin):    
+    x1,y1,x2,y2,faces = extract_all_faces(detector, filename, margin)
     if (faces is None or len(faces)==0):
         return (None,)*5
     return x1[0],y1[0],x2[0],y2[0],faces[0]    
 
 # extract a single face from a given photograph
-def extract_all_faces(detector, filename, required_size=(160, 160)):
+def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
     print(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
@@ -58,23 +60,28 @@ def extract_all_faces(detector, filename, required_size=(160, 160)):
    # extract the bounding box from the first face
     if (len(results) > 0):
         for i in range(len(results)):
-            x=results[i]['box'][0]
-            y=results[i]['box'][1]
-            width=results[i]['box'][2]
-            height= results[i]['box'][3]
+            startX=results[i]['box'][0]
+            startY=results[i]['box'][1]
+            endX=startX + results[i]['box'][2]
+            endY= startY + results[i]['box'][3]
             #x1[i], y1[i], width, height = results[i]['box']
             # bug fix
-            x,y = abs(x), abs(y)
+            startX,startY = abs(startX), abs(startY)
             # extract the face
-            face = pixels[y:y+height, x:x+width]
+            startX = int(startX - (startX*margin/100))
+            endX = int(endX + (endX*margin/100))
+            startY = int(startY - (startY*margin/100))
+            endY = int(endY + (endY*margin/100))
+
+            face = pixels[startY:endY, startX:endX]
             (fH, fW) = face.shape[:2]
             #print(i, x,y,width,height,fH,fW)
             if fW < 10 or fH < 10:
                 continue
-            x1.append(x)
-            y1.append(y)
-            x2.append(x1[i] + width)
-            y2.append(y1[i] + height)
+            x1.append(startX)
+            y1.append(startY)
+            x2.append(endX)
+            y2.append(endY)
             # resize pixels to the model size
             image = Image.fromarray(face)
             image = image.resize(required_size)
@@ -85,20 +92,20 @@ def extract_all_faces(detector, filename, required_size=(160, 160)):
         return (None,)*5
 
 
-def load_faces(detector, directory):
+def load_faces(detector, directory, margin):
     faces = list()
     # enumerate files
     for filename in listdir(directory):
         # path
         path = directory + filename
         # get face
-        x1, y1, x2, y2, face = extract_face(detector, path)
+        x1, y1, x2, y2, face = extract_face(detector, path, margin)
         if face is not None:
             # store
             faces.append(face)
     return faces
 
-def load_dataset(detector,directory):
+def load_dataset(detector,directory, margin):
     X, y = list(), list()
     # enumerate folders, on per class
     for subdir in listdir(directory):
@@ -108,7 +115,7 @@ def load_dataset(detector,directory):
         if not isdir(path):
             continue
         # load all faces in the subdirectory
-        faces = load_faces(detector,path)
+        faces = load_faces(detector,path, margin)
         if (len(faces)>0):
             # create labels
             labels = [subdir for _ in range(len(faces))]
@@ -124,10 +131,10 @@ def load_dataset(detector,directory):
 ## end of functions    
 
 detector = MTCNN()
-trainX, trainY = load_dataset(detector,args["traindir"])
+trainX, trainY = load_dataset(detector,args["traindir"],int(args["margin"]))
 print(len(trainX), len(trainY))
 # load test dataset
-testX, testY = load_dataset(detector,args["valdir"])
+testX, testY = load_dataset(detector,args["valdir"], int(args["margin"]))
 print(len(testX), len(testY))
 
 # load the facenet model

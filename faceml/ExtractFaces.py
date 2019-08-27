@@ -21,7 +21,7 @@ logfile="faceml.log"
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store face images")
-ap.add_argument("-m", "--margin", required=False,  nargs='?', const=20, type=int, default=20, help="Margin percentage to include around the face.")
+ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
 ap.add_argument("-l", "--logdir", required=True, help="path to log directory")
 
 args = vars(ap.parse_args())

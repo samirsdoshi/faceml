@@ -5,7 +5,6 @@ from numpy import expand_dims
 def load_image(filename):
     try:
         image = Image.open(filename)
-        image = resize_image(image,(160,160))
         # convert to RGB, if needed
         image = image.convert('RGB')
         # convert to array
@@ -45,9 +44,3 @@ def get_embedding(model, face_pixels):
     #print("yhat:",yhat.shape, yhat[0])
     return yhat[0]
 
-
-def tostr(*args):
-    retval=""
-    for i in range(len(args)):
-        retval=retval + " " + str(args[i])
-    return retval
