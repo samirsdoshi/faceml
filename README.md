@@ -1,7 +1,7 @@
 ## Description
 
 The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
-using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures. 
+using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures and without spending a ton of time going through every image.
 
 The detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
 
@@ -40,7 +40,8 @@ Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py
 * Run [faceml.sh](faceml.sh) to launch docker container. Change the volume line in faceml.sh to mount your directory with images. The container also runs jupyter notebook. It will wait for few seconds for the container to start. You can access the jupyter notebook from your browser using
 http://localhost:8888/?token=<i>token</i>
 * Run ` docker exec -it faceml bash `  to enter docker container
-* To detect objects and move images with objects in a seperate folder
+
+* To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
 root@b31ba7fcbfc1:/faceml# python OD.py --help
 usage: OD.py [-h] -i IMAGEDIR -c CLASS -o OUTDIR
@@ -164,7 +165,8 @@ optional arguments:
                         h (hierarchical) or f (flat)
 ```
 ## Example
-I have the combined training/detection code as jupyter notebooks for both methods at
+I have the combined training/detection code as jupyter notebooks for both methods. Review the end of both files below for results. 
+
 * [FD_keras](faceml/notebooks/FD_keras.ipynb)
 * [FD_cv2](faceml/notebooks/FD_cv2.ipynb)
 
