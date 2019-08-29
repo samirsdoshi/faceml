@@ -43,18 +43,30 @@ http://localhost:8888/?token=<i>token</i>
 
 * To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
-root@b31ba7fcbfc1:/faceml# python OD.py --help
-usage: OD.py [-h] -i IMAGEDIR -c CLASS -o OUTDIR
+usage: OD.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]] [-s [SIZE]]
+             [-n [COUNT]] -o OUTDIR
+
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGEDIR, --imagedir IMAGEDIR
                         path to input directory of images
   -c CLASS, --class CLASS
-                        object class to search for as per yolo_keras/coco_classes.txt
+                        object class to search for as per
+                        yolo_keras/coco_classes.txt
+  -k [CONFIDENCE], --confidence [CONFIDENCE]
+                        minimum confidence percentage for object detection.
+                        Default 80
+  -s [SIZE], --size [SIZE]
+                        minimum percentage size of the object in the image.
+  -n [COUNT], --count [COUNT]
+                        filter images containing X count of class object
   -o OUTDIR, --outdir OUTDIR
                         path to output directory with images having search
                         objects
 ```
+Tip: You can use this to find potrait photos of a single person and use it for training the model. You can set big enough size and count to 1 to isolate images of single person, even if there are few other people in the background.  
+</br>
+
 * To extract faces from images and save as seperate files (could be used as inputs for training)
 ```
 root@b31ba7fcbfc1:/faceml# python ExtractFaces.py --help

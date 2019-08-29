@@ -21,9 +21,9 @@ model_path="/faceml/yolo_keras/yolo.h5"
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagedir", required=True, help="path to input directory of images")
-ap.add_argument("-c", "--class", required=True, help="object class to search for as per http://cocodataset.org/")
+ap.add_argument("-c", "--class", required=True, help="object class to search for as per yolo_keras/coco_classes.txt")
 ap.add_argument("-k", "--confidence", required=False, nargs='?', const=80, type=int, default=80, help="minimum confidence percentage for object detection. Default 80")
-ap.add_argument("-s", "--size", required=False, nargs='?', const=0, type=int, default=0, help="minimum percentage size of the object in the image. Default 5")
+ap.add_argument("-s", "--size", required=False, nargs='?', const=0, type=float, default=0, help="minimum percentage size of the object in the image.")
 ap.add_argument("-n", "--count", required=False, nargs='?', const=0, type=int, default=0, help="filter images containing X count of class object")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory with images having search objects")
 args = vars(ap.parse_args())
@@ -100,7 +100,7 @@ for image_file in os.listdir(args["imagedir"]):
     classname=args["class"]
     requiredCount=int(args["count"])
     requiredConfidence=int(args["confidence"])
-    requiredSize=int(args["size"])
+    requiredSize=args["size"]
     objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
 
     if classname!="" and (classname in objects):
@@ -120,9 +120,9 @@ for image_file in os.listdir(args["imagedir"]):
                         filter_objects.append(out_classes[i])
 
         print(img_path, ": Found ", match, " count of ", args["class"], " objects")
-        if (requiredCount==0 or match==requiredCount):        
+        if (match > 0 and (requiredCount==0 or match==requiredCount)):        
             target_path = os.path.join(args["outdir"], image_file)
             print("Moving ", img_path, " to ", target_path)
-            #os.rename(img_path, target_path)
+            os.rename(img_path, target_path)
     else:
         print(img_path, ": No ", args["class"]," found")
