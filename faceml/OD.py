@@ -22,6 +22,9 @@ model_path="/faceml/yolo_keras/yolo.h5"
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagedir", required=True, help="path to input directory of images")
 ap.add_argument("-c", "--class", required=True, help="object class to search for as per http://cocodataset.org/")
+ap.add_argument("-k", "--confidence", required=False, nargs='?', const=80, type=int, default=80, help="minimum confidence percentage for object detection. Default 80")
+ap.add_argument("-s", "--size", required=False, nargs='?', const=0, type=int, default=0, help="minimum percentage size of the object in the image. Default 5")
+ap.add_argument("-n", "--count", required=False, nargs='?', const=0, type=int, default=0, help="filter images containing X count of class object")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory with images having search objects")
 args = vars(ap.parse_args())
 
@@ -74,65 +77,6 @@ def detect_objects(image):
                 })
     return out_boxes, out_scores, out_classes
 
-def show_objects(image, out_boxes, out_scores, out_classes):
-    
-    # Set up some display formatting
-    cmap = plt.get_cmap('tab20b')
-    colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-
-    # Plot the image
-    img = np.array(image)
-    plt.figure()
-    fig, ax = plt.subplots(1, figsize=(12,9))
-    ax.imshow(img)
-
-    # Set up padding for boxes
-    img_size = model_image_size[0]
-    pad_x = max(img.shape[0] - img.shape[1], 0) * (img_size / max(img.shape))
-    pad_y = max(img.shape[1] - img.shape[0], 0) * (img_size / max(img.shape))
-    unpad_h = img_size - pad_y
-    unpad_w = img_size - pad_x
-
-    # Use a random color for each class
-    unique_labels = np.unique(out_classes)
-    n_cls_preds = len(unique_labels)
-    bbox_colors = random.sample(colors, n_cls_preds)
-
-    # process each instance of each class that was found
-    for i, c in reversed(list(enumerate(out_classes))):
-
-        # Get the class name
-        predicted_class = class_names[c]
-        # Get the box coordinate and probability score for this instance
-        box = out_boxes[i]
-        score = out_scores[i]
-
-        # Format the label to be added to the image for this instance
-        label = '{} {:.2f}'.format(predicted_class, score)
-
-        # Get the box coordinates
-        top, left, bottom, right = box
-        y1 = max(0, np.floor(top + 0.5).astype('int32'))
-        x1 = max(0, np.floor(left + 0.5).astype('int32'))
-        y2 = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
-        x2 = min(image.size[0], np.floor(right + 0.5).astype('int32'))
-
-        # Set the box dimensions
-        box_h = ((y2 - y1) / unpad_h) * img.shape[0]
-        box_w = ((x2 - x1) / unpad_w) * img.shape[1]
-        y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
-        x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-        
-        # Add a box with the color for this class
-        color = bbox_colors[int(np.where(unique_labels == c)[0])]
-        bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
-        ax.add_patch(bbox)
-        plt.text(x1, y1, s=label, color='white', verticalalignment='top',
-                bbox={'color': color, 'pad': 0})
-        
-    plt.axis('off')
-    plt.show()
-
 imgcnt=1
 for image_file in os.listdir(args["imagedir"]):
     
@@ -146,15 +90,39 @@ for image_file in os.listdir(args["imagedir"]):
 
     # Resize image for model input
     image = letterbox_image(image, tuple(reversed(model_image_size)))
+    iw, ih = image.size
+    image_area=iw*ih
 
     # Detect objects in the image
     out_boxes, out_scores, out_classes = detect_objects(image)
 
     imgcnt=imgcnt+1
+    classname=args["class"]
+    requiredCount=int(args["count"])
+    requiredConfidence=int(args["confidence"])
+    requiredSize=int(args["size"])
     objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
-    if (args["class"] in objects):
-        target_path = os.path.join(args["outdir"], image_file)
-        print("Moving ", img_path, " to ", target_path)
-        os.rename(img_path, target_path)
+
+    if classname!="" and (classname in objects):
+        match=0
+        index=0
+        filter_boxes, filter_scores, filter_objects =[],[],[]
+        for i in range(len(out_classes)):
+            if (objects[i]==classname and out_scores[i]*100>=requiredConfidence):
+                    index=i
+                    box_height=(out_boxes[i][2]-out_boxes[i][0])
+                    box_width=(out_boxes[i][3]-out_boxes[i][1])
+                    box_area=box_width*box_height
+                    if ((box_area/image_area)*100 > requiredSize):
+                        match=match+1
+                        filter_boxes.append(out_boxes[i])
+                        filter_scores.append(out_scores[i])
+                        filter_objects.append(out_classes[i])
+
+        print(img_path, ": Found ", match, " count of ", args["class"], " objects")
+        if (requiredCount==0 or match==requiredCount):        
+            target_path = os.path.join(args["outdir"], image_file)
+            print("Moving ", img_path, " to ", target_path)
+            #os.rename(img_path, target_path)
     else:
-        print(img_path, ": No Person found")
+        print(img_path, ": No ", args["class"]," found")
