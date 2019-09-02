@@ -16,12 +16,14 @@ def creation_date(path_to_file):
         # so we'll settle for when its content was last modified.
         return stat.st_mtime
 
+def openfile(filepath):
+    return open(filepath,"w+")
 
-def tostr(*args):
-    retval=""
+def writelog(f, *args):
+    line=""
     for i in range(len(args)):
-        retval=retval + " " + str(args[i])
-    return retval
+        line=line + str(args[i]) + " "
+    f.write(line + '\n')    
 
 def getYearFromDatetime(dttime):
      dt=date.fromtimestamp(dttime)

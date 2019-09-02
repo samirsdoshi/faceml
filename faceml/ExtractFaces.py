@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 import argparse
 from numpy import asarray
+from util import *
 
 
 protext_path = "/faceml/opencv/deploy.prototxt"
@@ -22,7 +23,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store face images")
 ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
-ap.add_argument("-l", "--logdir", required=True, help="path to log directory")
+ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
 
 args = vars(ap.parse_args())
 
@@ -45,7 +46,6 @@ def blob_from_image(imagearray):
 
 # extract a single face from a given photograph
 def extract_all_faces(model,filename,margin):
-    print(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     (h,w,image) = load_image(filename)
@@ -84,15 +84,12 @@ def extract_all_faces(model,filename,margin):
         return None
 
 
-def writelog(f, *args):
-    line=""
-    for i in range(len(args)):
-        line=line + str(args[i])
-    f.write(line + '\n')
-
 model =load_facenet_model()
 imgcnt=1
-flog=open(args["logdir"] + "/" + logfile,"w+")
+if (args["logdir"]==""):
+    flog=sys.stdout
+else:    
+    flog=openfile(args["logdir"] + "/" + logfile)
 for image_file in os.listdir(args["imagesdir"]):    
     facesfound=0
     # Load image
@@ -106,3 +103,5 @@ for image_file in os.listdir(args["imagesdir"]):
         im.save(args["outdir"] + "/" + str(i) + "_" + image_file)
         facesfound=facesfound+1
     writelog(flog, "Faces found:", facesfound)
+
+flog.close()    

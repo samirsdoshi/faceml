@@ -12,3 +12,7 @@ COPY ./keras-facenet /faceml/keras-facenet/
 COPY ./yolo_keras /faceml/yolo_keras/
 COPY ./opencv /faceml/opencv/
 COPY ./faceml /faceml
+RUN chown jovyan /faceml/notebooks
+RUN chgrp users /faceml/notebooks
+RUN chown jovyan /faceml/notebooks/*
+RUN chgrp users /faceml/notebooks/*

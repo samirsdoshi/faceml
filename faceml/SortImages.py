@@ -1,5 +1,4 @@
 import sys
-import keras
 import os
 from os import listdir
 from os.path import isdir

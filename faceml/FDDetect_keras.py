@@ -31,7 +31,7 @@ ap.add_argument("-m", "--modelpath", required=True, help="directory with trained
 ap.add_argument("-c", "--class", required=True, help="class name to filter (class1,class2,...)")
 ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
 ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
-ap.add_argument("-l", "--logdir", required=True, help="path to log directory")
+ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
 
 args = vars(ap.parse_args())
 
@@ -133,7 +133,10 @@ out_encoder = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").rea
 
 imgcnt=1
 filesmoved=0
-flog=open(args["logdir"] + "/" + logfile,"w+")
+if (args["logdir"]==""):
+    flog=sys.stdout
+else:    
+    flog=openfile(args["logdir"] + "/" + logfile)
 in_encoder = Normalizer(norm='l2')
 result=dict()
 classes=args["class"].split(",")
@@ -145,29 +148,29 @@ for image_file in os.listdir(args["imagesdir"]):
     x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, img_path, int(args["margin"]))
     if (x1 is None):
         continue
-    flog.write(tostr("candidate classes found:", len(x1)))
+    writelog(flog, "candidate classes found:", len(x1))
     for i in range(len(faces)):
         yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)
-        flog.write(tostr(yhat_class, yhat_prob))
+        writelog(flog, yhat_class, yhat_prob)
         class_index = yhat_class[0]
         proba = yhat_prob[0,class_index]
         predict_names = out_encoder.inverse_transform(yhat_class)
 
-        flog.write(tostr(predict_names, proba))
+        writelog(flog,predict_names, proba)
 
         name = predict_names[0]
         if (proba >=0.80 and name in classes):
-            flog.write(tostr(i, "MATCH:",img_path, name, proba,"\n"))
+            writelog(flog,i, "MATCH:",img_path, name, proba)
             target_path = os.path.join(args["outdir"], image_file)
-            flog.write(tostr("Moving ", img_path, " to ", target_path,"\n"))
+            writelog(flog,"Moving ", img_path, " to ", target_path)
             os.rename(img_path, target_path)
             filesmoved=filesmoved+1
             result[name]=result[name]+1
             break
         else:
-            flog.write(tostr(i, "NO MATCH:",img_path, name, proba,"\n"))
+            writelog(flog,i, "NO MATCH:",img_path, name, proba)
     flog.flush()
 
 for i in range(len(classes)):
-    flog.write(tostr(classes[i]," detected in ", result[classes[i]], " files","\n"))
+    writelog(flog,classes[i]," detected in ", result[classes[i]], " files")
 flog.close()

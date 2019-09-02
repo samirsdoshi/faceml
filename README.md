@@ -1,9 +1,18 @@
 ## Description
 
 The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
-using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc, so that I can delete the remaining images from phone/camera without losing family pictures and without spending a ton of time going through every image.
+using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc. I can now delete the remaining images without losing family pictures, without spending a ton of time going through every image or without uploading thousands of images to an online service. 
 
-The detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
+The face detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
+
+Setting up data to train model is quite time consuming as you need to find bunch of images for each person you wish to identify. The tools here help you to bootstrap this process by:
+* Detecting images with persons
+* Classify images into portrait, group or selfie like images
+* Extract faces from images and save as files
+
+So, you could identify portrait images with persons or extract faces from group image and use those images for training. This helps to build your training set with multiple images for a person quickly.
+
+Each tool has a corresponding jupyter notebook so you can test with your images, tune parameters, or just visualize results.
 
 ## Setup
 
@@ -40,11 +49,14 @@ Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py
 * Run [faceml.sh](faceml.sh) to launch docker container. Change the volume line in faceml.sh to mount your directory with images. The container also runs jupyter notebook. It will wait for few seconds for the container to start. You can access the jupyter notebook from your browser using
 http://localhost:8888/?token=<i>token</i>
 * Run ` docker exec -it faceml bash `  to enter docker container
-
+##### Command Lines
 * To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
+root@bd5c1e7f6ab8:/faceml# python OD.py --help
+Using TensorFlow backend.
 usage: OD.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]] [-s [SIZE]]
-             [-n [COUNT]] -o OUTDIR
+             [-n [COUNT]] [-p [PORTRAIT]] [-g [GROUP]] [-f [SELFIE]] -o OUTDIR
+             [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -59,10 +71,23 @@ optional arguments:
   -s [SIZE], --size [SIZE]
                         minimum percentage size of the object in the image.
   -n [COUNT], --count [COUNT]
-                        filter images containing X count of class object
+                        select images containing n count of class object
+  -p [PORTRAIT], --portrait [PORTRAIT]
+                        portrait mode. only valid with count option. select
+                        images only if smallest of the n count objects is
+                        bigger by p percentage over next biggest object
+  -g [GROUP], --group [GROUP]
+                        group mode. select images only if n count objects are
+                        within g percentage
+  -f [SELFIE], --selfie [SELFIE]
+                        selfie mode. only valid with group option. select
+                        images only if largest object is bigger by f
+                        percentage and other objects are within g percentage
   -o OUTDIR, --outdir OUTDIR
                         path to output directory with images having search
                         objects
+  -l LOGDIR, --logdir LOGDIR
+                        path to log directory
 ```
 Tip: You can use this to find potrait photos of a single person and use it for training the model. You can set big enough size and count to 1 to isolate images of single person, even if there are few other people in the background.  
 </br>
@@ -71,7 +96,8 @@ Tip: You can use this to find potrait photos of a single person and use it for t
 ```
 root@b31ba7fcbfc1:/faceml# python ExtractFaces.py --help
 Using TensorFlow backend.
-usage: ExtractFaces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] -l LOGDIR
+usage: ExtractFaces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] [-l LOGDIR]
+
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGESDIR, --imagesdir IMAGESDIR
@@ -89,6 +115,7 @@ See [example](faceml/sampleimages/extractfaces/README.md)
 root@b31ba7fcbfc1:/faceml# python FDTrain_keras.py --help
 Using TensorFlow backend.
 usage: FDTrain_keras.py [-h] -t TRAINDIR [-p [MARGIN]] -v VALDIR -o OUTDIR
+
 optional arguments:
   -h, --help            show this help message and exit
   -t TRAINDIR, --traindir TRAINDIR
@@ -105,7 +132,8 @@ optional arguments:
 root@b31ba7fcbfc1:/faceml# python FDDetect_keras.py --help
 Using TensorFlow backend.
 usage: FDDetect_keras.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
-                         -o OUTDIR -l LOGDIR
+                         -o OUTDIR [-l LOGDIR]
+
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGESDIR, --imagesdir IMAGESDIR
@@ -126,6 +154,7 @@ optional arguments:
 ```
 root@b31ba7fcbfc1:/faceml# python FDTrain_cv2.py --help
 usage: FDTrain_cv2.py [-h] -t TRAINDIR -v VALDIR [-p [MARGIN]] -o OUTDIR
+
 optional arguments:
   -h, --help            show this help message and exit
   -t TRAINDIR, --traindir TRAINDIR
@@ -141,7 +170,8 @@ optional arguments:
 ```
 root@b31ba7fcbfc1:/faceml# python FDDetect_cv2.py --help
 usage: FDDetect_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
-                       -o OUTDIR -l LOGDIR
+                       -o OUTDIR [-l LOGDIR]
+
 optional arguments:
   -h, --help            show this help message and exit
   -i IMAGESDIR, --imagesdir IMAGESDIR
@@ -161,7 +191,6 @@ optional arguments:
 * Utility to sort images into folders on year/month/day (hierachical or flat directories)
 ```
 root@45df4a0417e8:/faceml# python SortImages.py --help
-Using TensorFlow backend.
 usage: SortImages.py [-h] -i IMAGEDIR -o OUTDIR -s SORTMODE -f FOLDERMODE
 
 optional arguments:
@@ -179,8 +208,9 @@ optional arguments:
 ## Example
 I have the combined training/detection code as jupyter notebooks for both methods. Review the end of both files below for results. 
 
-* [FD_keras](faceml/notebooks/FD_keras.ipynb)
-* [FD_cv2](faceml/notebooks/FD_cv2.ipynb)
+* [Object Detection](faceml/notebooks/OD.ipynb)
+* [Face Detection using Keras](faceml/notebooks/FD_keras.ipynb)
+* [Face Detection using cv2](faceml/notebooks/FD_cv2.ipynb)
 
 ## Credits/References:
 https://pjreddie.com/darknet/yolo/  
