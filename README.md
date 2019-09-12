@@ -1,30 +1,21 @@
 ## Description
 
-The repo provides a docker image with necessary ML base models and code for face recognition, with easy to use command-line api. I trained the ML model
-using potrait images/faces of people from my family and then sorted out images containing anyone from family from your phone, camera, whatsapp groups etc. I can now delete the remaining images without losing family pictures, without spending a ton of time going through every image or without uploading thousands of images to an online service. 
-
-The face detection also tries with multiple margin% to include more of a face image and picks the one with highest confidence, to improve detection accuracy. I found that this helped quite a bit. 
-
-Setting up data to train model is quite time consuming as you need to find bunch of images for each person you wish to identify. The tools here help you to bootstrap this process by:
-* Detecting images with persons
-* Classify images into portrait, group or selfie like images
-* Extract faces from images and save as files
-
-So, you could identify portrait images with persons or extract faces from group image and use those images for training. This helps to build your training set with multiple images for a person quickly.
-
-Each tool has a corresponding jupyter notebook so you can test with your images, tune parameters, or just visualize results.
+Please read to the full [article](https://medium.com/p/521ce6fa5877/edit) on Medium.
+The github repo provides a docker image with necessary ML base models and python utilities for face recognition, with easy to use command-line api. 
+Each tool has a corresponding jupyter notebook so you can test with your images, tune parameters, or just visualize results. 
 
 ## Setup
 
-* Download docker from docker hub using 
+* Install [Docker](https://docs.docker.com/install/) on your local machine
+* Download docker image from docker hub using 
 ` docker pull samirsdoshi/faceml:latest `
  OR  
 * Build image locally by running build-image.sh and copy large model files  
-a) Download a converted darknet YOLO model to keras [here](https://drive.google.com/drive/folders/1YHYPsN4BnXz408_SY9Mo0G4Z2cSR0WCG?usp=sharing) and copy to yolo_keras/yolo.h5. This is used in OD.py for object detection  
-b) Download keras-facenet from [here](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) and copy under keras-facenet. This is used for face detection in FDTrain_keras.py and FDDetect_keras.py  
+a) Download a converted darknet YOLO model to keras [here](https://drive.google.com/drive/folders/1YHYPsN4BnXz408_SY9Mo0G4Z2cSR0WCG?usp=sharing) and copy to yolo_keras/yolo.h5. This is used in detectobjects.py for object detection  
+b) Download keras-facenet from [here](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) and copy under keras-facenet. This is used for face detection in train_keras.py and detectface_keras.py  
 c) Download a Torch deep learning model which produces the 128-D facial embeddings [here](https://storage.cmusatyalab.org/openface-models/nn4.small2.v1.t7) file and save as opencv/openface_nn4.small2.v1.t7.  
 d) Also download a pre-trained Caffe deep learning model to detect faces [here](https://github.com/mmilovec/facedetectionOpenCV/blob/master/res10_300x300_ssd_iter_140000.caffemodel) and save as opencv/res10_300x300_ssd_iter_140000.caffemodel.   
-Both these files are used in FDTrain_cv2.py and FDDetect_cv2.py  
+
 
 ## Usage
 * Setup a folder with images. for. e.g
@@ -52,11 +43,11 @@ http://localhost:8888/?token=<i>token</i>
 ##### Command Lines
 * To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
-root@bd5c1e7f6ab8:/faceml# python OD.py --help
+root@bd5c1e7f6ab8:/faceml# python detectobjects.py --help
 Using TensorFlow backend.
-usage: OD.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]] [-s [SIZE]]
-             [-n [COUNT]] [-p [PORTRAIT]] [-g [GROUP]] [-f [SELFIE]] -o OUTDIR
-             [-l LOGDIR]
+usage: detectobjects.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]]
+                        [-s [SIZE]] [-n [COUNT]] [-p [PORTRAIT]] [-g [GROUP]]
+                        [-o OUTDIR] [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -73,19 +64,15 @@ optional arguments:
   -n [COUNT], --count [COUNT]
                         select images containing n count of class object
   -p [PORTRAIT], --portrait [PORTRAIT]
-                        portrait mode. only valid with count option. select
-                        images only if smallest of the n count objects is
-                        bigger by p percentage over next biggest object
+                        portrait mode. select images only if smallest of the n
+                        count objects is bigger by p percentage over next
+                        biggest object
   -g [GROUP], --group [GROUP]
                         group mode. select images only if n count objects are
                         within g percentage
-  -f [SELFIE], --selfie [SELFIE]
-                        selfie mode. only valid with group option. select
-                        images only if largest object is bigger by f
-                        percentage and other objects are within g percentage
   -o OUTDIR, --outdir OUTDIR
-                        path to output directory with images having search
-                        objects
+                        path to output directory where selected images will be
+                        moved
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
 ```
@@ -94,9 +81,9 @@ Tip: You can use this to find potrait photos of a single person and use it for t
 
 * To extract faces from images and save as seperate files (could be used as inputs for training)
 ```
-root@b31ba7fcbfc1:/faceml# python ExtractFaces.py --help
+root@b31ba7fcbfc1:/faceml# python extract_faces.py --help
 Using TensorFlow backend.
-usage: ExtractFaces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] [-l LOGDIR]
+usage: extract_faces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -112,9 +99,10 @@ optional arguments:
 See [example](faceml/sampleimages/extractfaces/README.md)
 * To train model (using Keras/Facenet)
 ```
-root@b31ba7fcbfc1:/faceml# python FDTrain_keras.py --help
+root@b31ba7fcbfc1:/faceml# python train_keras.py --help
 Using TensorFlow backend.
-usage: FDTrain_keras.py [-h] -t TRAINDIR [-p [MARGIN]] -v VALDIR -o OUTDIR
+usage: train_keras.py [-h] -t TRAINDIR [-p [MARGIN]] -v VALDIR -o OUTDIR
+                      [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -126,13 +114,15 @@ optional arguments:
                         path to input directory of images for training
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store trained model files
+  -l LOGDIR, --logdir LOGDIR
+                        path to log directory
 ```
 * To detect faces and move files (using Keras/Facenet)
 ```
-root@b31ba7fcbfc1:/faceml# python FDDetect_keras.py --help
+root@b31ba7fcbfc1:/faceml# python detectface_keras.py --help
 Using TensorFlow backend.
-usage: FDDetect_keras.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
-                         -o OUTDIR [-l LOGDIR]
+usage: detectface_keras.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS
+                           [-p [MARGIN]] -o OUTDIR [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -152,8 +142,9 @@ optional arguments:
 ```
 * To train model (using OpenCV/Caffe)
 ```
-root@b31ba7fcbfc1:/faceml# python FDTrain_cv2.py --help
-usage: FDTrain_cv2.py [-h] -t TRAINDIR -v VALDIR [-p [MARGIN]] -o OUTDIR
+root@b31ba7fcbfc1:/faceml# python train_cv2.py --help
+usage: train_cv2.py [-h] -t TRAINDIR -v VALDIR [-p [MARGIN]] -o OUTDIR
+                    [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -165,12 +156,14 @@ optional arguments:
                         margin percentage pixels to include around the face
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store trained model files
+  -l LOGDIR, --logdir LOGDIR
+                        path to log directory
 ```
 * To detect faces and move files (using OpenCV/Caffe)
 ```
-root@b31ba7fcbfc1:/faceml# python FDDetect_cv2.py --help
-usage: FDDetect_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
-                       -o OUTDIR [-l LOGDIR]
+root@b31ba7fcbfc1:/faceml# python detectface_cv2.py --help
+usage: detectface_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
+                         -o OUTDIR [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -190,8 +183,8 @@ optional arguments:
 ```
 * Utility to sort images into folders on year/month/day (hierachical or flat directories)
 ```
-root@45df4a0417e8:/faceml# python SortImages.py --help
-usage: SortImages.py [-h] -i IMAGEDIR -o OUTDIR -s SORTMODE -f FOLDERMODE
+root@45df4a0417e8:/faceml# python sortimages.py --help
+usage: sortimages.py [-h] -i IMAGEDIR -o OUTDIR -s SORTMODE -f FOLDERMODE
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -213,12 +206,12 @@ I have the combined training/detection code as jupyter notebooks for both method
 * [Face Detection using cv2](faceml/notebooks/FD_cv2.ipynb)
 
 ## Credits/References:
-https://pjreddie.com/darknet/yolo/  
-https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/  
-https://mc.ai/face-detection-with-opencv-and-deep-learning/  
-https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/  
-https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/  
-http://cmusatyalab.github.io/openface/  
-https://cmusatyalab.github.io/openface/models-and-accuracies/  
+https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/
+https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/
+https://pjreddie.com/darknet/yolo/
+https://mc.ai/face-detection-with-opencv-and-deep-learning/
+https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/
+http://cmusatyalab.github.io/openface/
+https://cmusatyalab.github.io/openface/models-and-accuracies/
 
 

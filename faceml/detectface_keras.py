@@ -18,32 +18,26 @@ from numpy import asarray
 from mtcnn.mtcnn import MTCNN
 from kerasutil import *
 from util import *
+import logging
 
-model_path = "/faceml/keras-facenet/model/facenet_keras.h5"
-model_weights_path = "/faceml/keras-facenet/weights/facenet_keras_weights.h5"
 recognizer_file = "recognizer_keras.pickle"
 labelencoder_file = "labelencoder_keras.pickle"
-logfile="faceml.log"
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
-ap.add_argument("-m", "--modelpath", required=True, help="directory with trained model")
-ap.add_argument("-c", "--class", required=True, help="class name to filter (class1,class2,...)")
-ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
-ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
-ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+def parse_args():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
+    ap.add_argument("-m", "--modelpath", required=True, help="directory with trained model")
+    ap.add_argument("-c", "--class", required=True, help="class name to filter (class1,class2,...)")
+    ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
+    ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
+    ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    return vars(ap.parse_args())
 
-args = vars(ap.parse_args())
 
-def load_keras_model():
-    # load the model
-    model =  load_model(model_path)
-    model.load_weights(model_weights_path)
-    return model
-
-# extract a single face from a given photograph
+# extract all faces from a given photograph
 def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
-    print(filename)
+    logger = getMyLogger()
+    logger.debug(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     # load image from file
@@ -67,7 +61,7 @@ def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
                 startX,startY,endX,endY = addMargin(startX,startY,endX,endY,margin)
             face = pixels[startY:endY, startX:endX]
             (fH, fW) = face.shape[:2]
-            #print(i, x,y,width,height,fH,fW)
+            #logger.debug(i, x,y,width,height,fH,fW)
             if fW < 10 or fH < 10:
                 continue
             x1.append(startX)
@@ -125,52 +119,52 @@ def retryPred(x1,y1,x2,y2,pixels,model,in_encoder,recognizer, required_size=(160
             break
     return max_yhat_class, max_yhat_prob
 
+def main(args):
+    logger = getLogger(args["logdir"], logfile)
 
-model =load_keras_model()
-detector = MTCNN()
-recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
-out_encoder = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").read())
+    model =load_keras_model()
+    detector = MTCNN()
+    recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
+    out_encoder = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").read())
 
-imgcnt=1
-filesmoved=0
-if (args["logdir"]==""):
-    flog=sys.stdout
-else:    
-    flog=openfile(args["logdir"] + "/" + logfile)
-in_encoder = Normalizer(norm='l2')
-result=dict()
-classes=args["class"].split(",")
-for i in range(len(classes)):
-    result[classes[i]]=0
-for image_file in os.listdir(args["imagesdir"]):    
-    # Load image
-    img_path = os.path.join(args["imagesdir"], image_file)
-    x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, img_path, int(args["margin"]))
-    if (x1 is None):
-        continue
-    writelog(flog, "candidate classes found:", len(x1))
-    for i in range(len(faces)):
-        yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)
-        writelog(flog, yhat_class, yhat_prob)
-        class_index = yhat_class[0]
-        proba = yhat_prob[0,class_index]
-        predict_names = out_encoder.inverse_transform(yhat_class)
+    imgcnt=1
+    filesmoved=0
+    in_encoder = Normalizer(norm='l2')
+    result=dict()
+    classes=args["class"].split(",")
+    for i in range(len(classes)):
+        result[classes[i]]=0
+    for image_file in os.listdir(args["imagesdir"]):    
+        # Load image
+        img_path = os.path.join(args["imagesdir"], image_file)
+        x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, img_path, int(args["margin"]))
+        if (x1 is None):
+            continue
+        logger.debug( "candidate classes found:", len(x1))
+        for i in range(len(faces)):
+            yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)
+            logger.debug( yhat_class, yhat_prob)
+            class_index = yhat_class[0]
+            proba = yhat_prob[0,class_index]
+            predict_names = out_encoder.inverse_transform(yhat_class)
 
-        writelog(flog,predict_names, proba)
+            logger.debug(predict_names, proba)
 
-        name = predict_names[0]
-        if (proba >=0.80 and name in classes):
-            writelog(flog,i, "MATCH:",img_path, name, proba)
-            target_path = os.path.join(args["outdir"], image_file)
-            writelog(flog,"Moving ", img_path, " to ", target_path)
-            os.rename(img_path, target_path)
-            filesmoved=filesmoved+1
-            result[name]=result[name]+1
-            break
-        else:
-            writelog(flog,i, "NO MATCH:",img_path, name, proba)
-    flog.flush()
+            name = predict_names[0]
+            if (proba >=0.80 and name in classes):
+                logger.debug(i, "MATCH:",img_path, name, proba)
+                target_path = os.path.join(args["outdir"], image_file)
+                logger.debug("Moving ", img_path, " to ", target_path)
+                os.rename(img_path, target_path)
+                filesmoved=filesmoved+1
+                result[name]=result[name]+1
+                break
+            else:
+                logger.debug(i, "NO MATCH:",img_path, name, proba)
 
-for i in range(len(classes)):
-    writelog(flog,classes[i]," detected in ", result[classes[i]], " files")
-flog.close()
+    for i in range(len(classes)):
+        logger.debug(classes[i]," detected in ", result[classes[i]], " files")
+
+if __name__ == '__main__':
+    args=parse_args()
+    main(args)

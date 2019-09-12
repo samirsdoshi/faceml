@@ -1,6 +1,15 @@
 from PIL import Image
 from numpy import asarray
 from numpy import expand_dims
+from keras.models import load_model
+
+def load_keras_model():
+    # load the model
+    model_path = "/faceml/keras-facenet/model/facenet_keras.h5"
+    model_weights_path = "/faceml/keras-facenet/weights/facenet_keras_weights.h5"
+    model = load_model(model_path)
+    model.load_weights(model_weights_path)
+    return model
 
 def load_image(filename):
     try:

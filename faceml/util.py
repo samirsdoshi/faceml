@@ -1,6 +1,11 @@
 import os
+import sys
 import datetime
 from datetime import date
+import logging
+
+
+logfile = "faceml.log"
 
 def creation_date(path_to_file):
     """
@@ -16,14 +21,36 @@ def creation_date(path_to_file):
         # so we'll settle for when its content was last modified.
         return stat.st_mtime
 
+def logdebug(self, *args):
+    line=''.join(str(args[i]) for i in range(len(args)))
+    self.log(logging.DEBUG, line)
+
+def logerror(self, *args):
+    line=''.join(str(args[i]) for i in range(len(args)))
+    self.log(logging.ERROR, line)
+
+def getMyLogger():
+    return logging.getLogger("faceml")
+
+def getLogger(logdir, logfile):
+    logger = logging.getLogger("faceml")
+    logger.setLevel(logging.DEBUG)
+    ch = getLogHandler(logdir, logfile)
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+    logger.addHandler(ch)
+    logger.__class__.debug=logdebug
+    logger.__class__.error=logerror
+    return logger
+
+def getLogHandler(filedir, filename):
+    if (filedir==""):
+        return logging.StreamHandler()
+    else:    
+        return logging.FileHandler(filedir + "/" + filename)
+
 def openfile(filepath):
     return open(filepath,"w+")
-
-def writelog(f, *args):
-    line=""
-    for i in range(len(args)):
-        line=line + str(args[i]) + " "
-    f.write(line + '\n')    
 
 def getYearFromDatetime(dttime):
      dt=date.fromtimestamp(dttime)

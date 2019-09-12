@@ -11,45 +11,27 @@ from numpy import asarray
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
+from cv2util import *
+from util import *
 
-
-protext_path = "/faceml/opencv/deploy.prototxt"
-model_path = "/faceml/opencv/res10_300x300_ssd_iter_140000.caffemodel"
-embedder_path = "/faceml/opencv/openface_nn4.small2.v1.t7"
 recognizer_file = "recognizer_cv2.pickle"
 labelencoder_file = "labelencoder_cv2.pickle"
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-t", "--traindir", required=True, help="path to input directory of images for training")
-ap.add_argument("-v", "--valdir", required=True, help="path to input directory of images for training")
-ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
-ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store trained model files")
-args = vars(ap.parse_args())
 
-
-def load_facenet_model():
-    # load the model
-    return cv2.dnn.readNetFromCaffe(protext_path, model_path)
-
-def load_embedder():
-    return cv2.dnn.readNetFromTorch(embedder_path)
-
-def load_image(filename):
-    try:
-        image = cv2.imread(filename)
-        (h, w) = image.shape[:2]
-        return h,w,image
-    except:
-        print("Error loading " + filename)
-        return (None,)*3
-
-def blob_from_image(imagearray):
-    return cv2.dnn.blobFromImage(cv2.resize(imagearray, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+def parse_args():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-t", "--traindir", required=True, help="path to input directory of images for training")
+    ap.add_argument("-v", "--valdir", required=True, help="path to input directory of images for training")
+    ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
+    ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store trained model files")
+    ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    return  vars(ap.parse_args())
     
 
 # extract a single face from a given photograph
 def extract_all_faces(model,filename, margin):
-    print(filename)
+    logger = getMyLogger()
+    logger.debug(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     (h,w,image) = load_image(filename)
@@ -88,7 +70,7 @@ def extract_all_faces(model,filename, margin):
                 faces.append(face_array)
         return  x1, y1, x2, y2, faces
     else:
-        print("no detections")
+        logger.debug("no detections")
         return (None,)*5
 
 # extract a single face from a given photograph
@@ -102,8 +84,6 @@ def load_faces(model, directory, margin):
     faces = list()
     # enumerate files
     for filename in os.listdir(directory):
-        if (filename == ".DS_Store"):
-            continue
         # path
         path = directory + filename
         # get face
@@ -115,14 +95,12 @@ def load_faces(model, directory, margin):
 
 def load_dataset(model, directory, margin):
     X, y = list(), list()
-    
+    logger = getMyLogger()
     knownEmbeddings = []
     knownNames = []
     embedder = load_embedder()
     # enumerate folders, on per class
     for subdir in os.listdir(directory):
-        if (subdir == ".DS_Store"):
-            continue
         # path
         path = directory + subdir + '/'
         # skip any files that might be in the dir
@@ -134,7 +112,7 @@ def load_dataset(model, directory, margin):
             # create labels
             labels = [subdir for _ in range(len(faces))]
             # summarize progress
-            print('>loaded %d examples for class: %s' % (len(faces), subdir))
+            logger.debug('loaded %d examples for class: %s' % (len(faces), subdir))
             # store
             for face in range(len(faces)):
                 faceBlob = cv2.dnn.blobFromImage(faces[face], 1.0 / 255,(96, 96), (0, 0, 0), swapRB=True, crop=False)
@@ -148,38 +126,40 @@ def load_dataset(model, directory, margin):
 
     return knownNames, knownEmbeddings
 
+def main(args):
+    logger =  getLogger(args["logdir"], logfile)
 
-## end of functions    
-model =load_facenet_model()
-print("Load trainings")
-trainY, trainX = load_dataset(model,args["traindir"], int(args["margin"]))
-print(len(trainX), len(trainY))
-print("Load validations")
-testY, testX = load_dataset(model,args["valdir"], int(args["margin"]))
-print(len(testX), len(testY))
+    model =load_caffe_model()
+    trainY, trainX = load_dataset(model,args["traindir"], int(args["margin"]))
+    logger.debug(asarray(trainX).shape)
+    testY, testX = load_dataset(model,args["valdir"], int(args["margin"]))
+    logger.debug(asarray(testX).shape)
+    
+    le = LabelEncoder()
+    trainY = le.fit_transform(trainY)
+    testY = le.fit_transform(testY)
 
-le = LabelEncoder()
-#print(data['names'])
-trainY = le.fit_transform(trainY)
-testY = le.fit_transform(testY)
+    recognizer = SVC(C=1.0, kernel="linear", probability=True)
+    recognizer.fit(trainX, trainY)
 
-recognizer = SVC(C=1.0, kernel="linear", probability=True)
-recognizer.fit(trainX, trainY)
+    # write the actual face recognition model to disk
+    f = open(args["outdir"] + "/" + recognizer_file, "wb")
+    f.write(pickle.dumps(recognizer))
+    f.close()
 
-# write the actual face recognition model to disk
-f = open(args["outdir"] + "/" + recognizer_file, "wb")
-f.write(pickle.dumps(recognizer))
-f.close()
+    # write the label encoder to disk
+    f = open(args["outdir"] + "/" + labelencoder_file, "wb")
+    f.write(pickle.dumps(le))
+    f.close()
 
-# write the label encoder to disk
-f = open(args["outdir"] + "/" + labelencoder_file, "wb")
-f.write(pickle.dumps(le))
-f.close()
+    yhat_train = recognizer.predict(trainX)
+    yhat_test = recognizer.predict(testX)
+    # score
+    score_train = accuracy_score(trainY, yhat_train)
+    score_test = accuracy_score(testY, yhat_test)
+    # summarize
+    logger.debug('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
 
-yhat_train = recognizer.predict(trainX)
-yhat_test = recognizer.predict(testX)
-# score
-score_train = accuracy_score(trainY, yhat_train)
-score_test = accuracy_score(testY, yhat_test)
-# summarize
-print('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
+if __name__ == '__main__':
+    args = parse_args()
+    main(args)
