@@ -42,7 +42,7 @@ def extract_face(detector, filename, margin):
 # extract a single face from a given photograph
 def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
     logger = getMyLogger()
-    logger.debug(filename)
+    logger.info(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     # load image from file
@@ -135,7 +135,7 @@ def main(args):
 
     # load the facenet model
     model = load_keras_model()
-    logger.debug('Loaded Model')
+    logger.info('Loaded Model')
 
     # convert each face in the train set to an embedding
     newTrainX = list()
@@ -143,14 +143,14 @@ def main(args):
         embedding = get_embedding(model, face_pixels)
         newTrainX.append(embedding)
     newTrainX = asarray(newTrainX)
-    logger.debug(newTrainX.shape)
+    logger.info(newTrainX.shape)
     # convert each face in the test set to an embedding
     newTestX = list()
     for face_pixels in testX:
         embedding = get_embedding(model, face_pixels)
         newTestX.append(embedding)
     newTestX = asarray(newTestX)
-    logger.debug(newTestX.shape)
+    logger.info(newTestX.shape)
 
     # normalize input vectors
     in_encoder = Normalizer(norm='l2')
@@ -182,7 +182,7 @@ def main(args):
     score_train = accuracy_score(trainY, yhat_train)
     score_test = accuracy_score(testY, yhat_test)
     # summarize
-    logger.debug('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
+    logger.info('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
 
 if __name__ == '__main__':
     args = parse_args()

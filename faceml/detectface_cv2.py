@@ -24,8 +24,9 @@ def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--imagesdir", required=True, help="path to input directory of images")
     ap.add_argument("-m", "--modelpath", required=True, help="directory with trained model")
-    ap.add_argument("-c", "--class", required=True, help="class name to filter (class1,class2,...)")
+    ap.add_argument("-c", "--person", required=True, help="person name expression to filter -  <name1> | not [name1] | [name1] and [name2] | [name1] and ([name2] or [name3]) and not [name4] etc")
     ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
+    ap.add_argument("-k", "--confidence", required=False, nargs='?', const=70, type=int, default=70, help="minimum confidence percentage for face recognition. Default 70")
     ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
     return vars(ap.parse_args())
@@ -34,7 +35,6 @@ def parse_args():
 # extract a single face from a given photograph
 def extract_all_faces(model,filename, margin):
     logger = getMyLogger()
-    logger.debug(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     (h,w,image) = load_image(filename)
@@ -71,7 +71,7 @@ def extract_all_faces(model,filename, margin):
                 faces.append(face_array)
         return  x1, y1, x2, y2, faces, image
     else:
-        logger.debug("no detections")
+        logger.info("no detections")
         return None,None,None,None,None,image
 
 #retry prediction with different margins around the face.
@@ -104,39 +104,37 @@ def main(args):
     recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
     le = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").read())
     
-    result=dict()
-    classes=args["class"].split(",")
-    for i in range(len(classes)):
-        result[classes[i]]=0
-
-    imgcnt=1
+    classexpr=args["person"].lower()
+    search_classes, not_classes, expr = processClassName(classexpr)
     filesmoved=0
     for image_file in os.listdir(args["imagesdir"]):    
         # Load image
         img_path = os.path.join(args["imagesdir"], image_file)
+        logger.debug(img_path)
         x1, y1, x2, y2, faces, pixels = extract_all_faces(model, img_path, int(args["margin"]))
         if (x1 is None):
             continue
-        logger.debug( "candidate classes found:", len(x1))
+        logger.debug("candidate classes found:", len(x1))
+        objects=[]
         for i in range(len(x1)):
             preds = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,embedder,recognizer)
             j = np.argmax(preds)
             proba = preds[j]
             name = le.classes_[j]
-            logger.debug(preds, name, proba)
-            if (proba >=0.80 and name in classes):
-                logger.debug( i, "MATCH:",img_path, name, proba)
+            logger.debug(name, " ", proba)
+            if (proba*100 >=args["confidence"]):
+                objects.append(name)
+
+        if(eval(expr)):
+            logger.info("MATCH:",img_path)
+            if args["outdir"]!="":
+                setupDir(args["outdir"])
                 target_path = os.path.join(args["outdir"], image_file)
-                logger.debug( "Moving ", img_path, " to ", target_path)
+                logger.info( "Moving ", img_path, " to ", target_path)
                 os.rename(img_path, target_path)
                 filesmoved=filesmoved+1
-                result[name]=result[name]+1
-                break
-            else:
-                logger.debug( i, "NO MATCH:",img_path, name, proba)
-
-    for i in range(len(classes)):
-        logger.debug( classes[i]," detected in ", result[classes[i]], " files")
+        else:
+            logger.info("NO MATCH:",img_path)
 
 if __name__ == '__main__':
     args =  parse_args()

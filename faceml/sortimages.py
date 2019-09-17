@@ -17,9 +17,6 @@ def parse_args():
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
     return vars(ap.parse_args())
 
-def setupDir(targetdir):
-    if not os.path.exists(targetdir):
-        os.makedirs(targetdir)
 
 def setupTargetDir(outdir, year, month, day, sortmode, foldermode):
     targetDir=""
@@ -52,10 +49,10 @@ def main(args):
             month=getMonthFromDatetime(crdate)
             day=getDayFromDatetime(crdate)
             targetDir = setupTargetDir(args["outdir"], year, month, day, args["sortmode"].lower(),args["foldermode"].lower())
-            logger.debug(path, "-->", targetDir + "/" + filename)
+            logger.info(path, "-->", targetDir + "/" + filename)
             os.rename(path, targetDir + "/" + filename)
         except Exception as e:
-            logger.debug("Error processing " + path + "." + str(e))
+            logger.info("Error processing " + path + "." + str(e))
 
 if __name__ == '__main__':
     args =parse_args()

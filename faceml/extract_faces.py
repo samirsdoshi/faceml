@@ -63,7 +63,7 @@ def extract_all_faces(model,filename,margin):
                 faces.append(face_array)
         return  faces
     else:
-        logger.debug("no detections")
+        logger.info("no detections")
         return None
 
 
@@ -77,7 +77,7 @@ def main(args):
         facesfound=0
         # Load image
         img_path = os.path.join(args["imagesdir"], image_file)
-        logger.debug(img_path)
+        logger.info(img_path)
         faces = extract_all_faces(model, img_path, int(args["margin"]))
         if (faces is None):
             continue
@@ -85,7 +85,7 @@ def main(args):
             im = Image.fromarray(faces[i])
             im.save(args["outdir"] + "/" + str(i) + "_" + image_file)
             facesfound=facesfound+1
-        logger.debug( "Faces found:", facesfound)
+        logger.info( "Faces found:", facesfound)
 
 
 if __name__ == '__main__':

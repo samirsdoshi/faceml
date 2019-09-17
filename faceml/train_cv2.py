@@ -31,7 +31,7 @@ def parse_args():
 # extract a single face from a given photograph
 def extract_all_faces(model,filename, margin):
     logger = getMyLogger()
-    logger.debug(filename)
+    logger.info(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
     (h,w,image) = load_image(filename)
@@ -70,7 +70,7 @@ def extract_all_faces(model,filename, margin):
                 faces.append(face_array)
         return  x1, y1, x2, y2, faces
     else:
-        logger.debug("no detections")
+        logger.info("no detections")
         return (None,)*5
 
 # extract a single face from a given photograph
@@ -112,7 +112,7 @@ def load_dataset(model, directory, margin):
             # create labels
             labels = [subdir for _ in range(len(faces))]
             # summarize progress
-            logger.debug('loaded %d examples for class: %s' % (len(faces), subdir))
+            logger.info('loaded %d examples for class: %s' % (len(faces), subdir))
             # store
             for face in range(len(faces)):
                 faceBlob = cv2.dnn.blobFromImage(faces[face], 1.0 / 255,(96, 96), (0, 0, 0), swapRB=True, crop=False)
@@ -131,9 +131,9 @@ def main(args):
 
     model =load_caffe_model()
     trainY, trainX = load_dataset(model,args["traindir"], int(args["margin"]))
-    logger.debug(asarray(trainX).shape)
+    logger.info(asarray(trainX).shape)
     testY, testX = load_dataset(model,args["valdir"], int(args["margin"]))
-    logger.debug(asarray(testX).shape)
+    logger.info(asarray(testX).shape)
     
     le = LabelEncoder()
     trainY = le.fit_transform(trainY)
@@ -158,7 +158,7 @@ def main(args):
     score_train = accuracy_score(trainY, yhat_train)
     score_test = accuracy_score(testY, yhat_test)
     # summarize
-    logger.debug('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
+    logger.info('Accuracy: train=%.3f, test=%.3f' % (score_train*100, score_test*100))
 
 if __name__ == '__main__':
     args = parse_args()

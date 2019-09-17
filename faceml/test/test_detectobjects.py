@@ -44,6 +44,49 @@ class TestDO(unittest.TestCase):
         self.assertEqual(asarray(areas).size,3)
         return matchedConfidence, matchedSize, areas
 
+    def test_processClassName(self):
+
+        classname="person"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person"])
+        self.assertEqual(expr,"('person' in objects)")
+
+
+        classname="[person]"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person"])
+        self.assertEqual(expr,"('person' in objects)")
+
+
+        classname="not [person]"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person"])
+        self.assertEqual(expr,"not ('person' in objects)")
+
+
+        classname="[person] and [flower]"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person","flower"])
+        self.assertEqual(expr,"('person' in objects) and ('flower' in objects)")
+
+        classname="[person] and [flower] and not [bird]"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person","flower","bird"])
+        self.assertEqual(expr,"('person' in objects) and ('flower' in objects) and not ('bird' in objects)")
+
+
+        classname="([person] and [flower]) or [bird]"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person","flower","bird"])
+        self.assertEqual(expr,"(('person' in objects) and ('flower' in objects)) or ('bird' in objects)")
+
+
+        classname="([person] and [car]) or ([flower] and [bird])"
+        classes, expr = processClassName(classname)
+        self.assertEqual(classes,["person","car","flower","bird"])
+        self.assertEqual(expr,"(('person' in objects) and ('car' in objects)) or (('flower' in objects) and ('bird' in objects))")
+
+
     def test_categorizeimage(self):
         requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff =0,150,100,0,0
         matchedConfidence, matchedSize, areas = self.test_boxareas()

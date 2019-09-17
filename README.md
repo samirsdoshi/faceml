@@ -1,6 +1,6 @@
 ## Description
 
-Please read to the full [article](https://medium.com/p/521ce6fa5877/edit) on Medium.
+<i>Please read the full [article](https://medium.com/p/521ce6fa5877/edit) on Medium.</i>
 The github repo provides a docker image with necessary ML base models and python utilities for face recognition, with easy to use command-line api. 
 Each tool has a corresponding jupyter notebook so you can test with your images, tune parameters, or just visualize results. 
 
@@ -37,13 +37,13 @@ d) Also download a pre-trained Caffe deep learning model to detect faces [here](
     |-outdir
     |-logdir
 ``` 
-* Run [faceml.sh](faceml.sh) to launch docker container. Change the volume line in faceml.sh to mount your directory with images. The container also runs jupyter notebook. It will wait for few seconds for the container to start. You can access the jupyter notebook from your browser using
+* Change the volume line in faceml.sh to mount your directory with images. Run [faceml.sh](faceml.sh) to launch docker container. The container also runs jupyter notebook. It will wait for few seconds for the container to start. You can access the jupyter notebook from your browser using
 http://localhost:8888/?token=<i>token</i>
 * Run ` docker exec -it faceml bash `  to enter docker container
 ##### Command Lines
 * To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
-root@bd5c1e7f6ab8:/faceml# python detectobjects.py --help
+root@2ce5a5365ba9:/faceml# python detectobjects.py --help
 Using TensorFlow backend.
 usage: detectobjects.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]]
                         [-s [SIZE]] [-n [COUNT]] [-p [PORTRAIT]] [-g [GROUP]]
@@ -54,7 +54,7 @@ optional arguments:
   -i IMAGEDIR, --imagedir IMAGEDIR
                         path to input directory of images
   -c CLASS, --class CLASS
-                        object class to search for as per
+                        object class expression to search for as per
                         yolo_keras/coco_classes.txt
   -k [CONFIDENCE], --confidence [CONFIDENCE]
                         minimum confidence percentage for object detection.
@@ -76,12 +76,43 @@ optional arguments:
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
 ```
-Tip: You can use this to find potrait photos of a single person and use it for training the model. You can set big enough size and count to 1 to isolate images of single person, even if there are few other people in the background.  
-</br>
+Class expression supports expressions like
+* person
+* not [person]
+* [person] and [car]
+* [person] and ([car] or [boat])
+* [person] and [flower] and not [bird]
+* ([person] and [car]) or ([flower] and [bird])
+etc..
 
+Also you can find potrait photos of a single person and use it for training the model. You can set big enough size and count to 1 to isolate images of single person, even if there are few other people in the background.  
+</br>
+* To detect similar images and group them under a folder, so that those can be reviewed and sorted appropriately.
+```
+root@2ce5a5365ba9:/faceml# python detectsimilar.py --help
+Using TensorFlow backend.
+usage: detectsimilar.py [-h] -d IMAGEDIR [-c CLASS] [-t [THRESHOLD]]
+                        [-o OUTDIR] [-l LOGDIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d IMAGEDIR, --imagedir IMAGEDIR
+                        path to input directory of images
+  -c CLASS, --class CLASS
+                        object class to filter as per
+                        yolo_keras/coco_classes.txt
+  -t [THRESHOLD], --threshold [THRESHOLD]
+                        minimum confidence percentage for similarity. Default
+                        70
+  -o OUTDIR, --outdir OUTDIR
+                        path to output directory where selected images will be
+                        moved
+  -l LOGDIR, --logdir LOGDIR
+                        path to log directory
+```
 * To extract faces from images and save as seperate files (could be used as inputs for training)
 ```
-root@b31ba7fcbfc1:/faceml# python extract_faces.py --help
+root@2ce5a5365ba9:/faceml# python extract_faces.py --help
 Using TensorFlow backend.
 usage: extract_faces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] [-l LOGDIR]
 
@@ -119,10 +150,11 @@ optional arguments:
 ```
 * To detect faces and move files (using Keras/Facenet)
 ```
-root@b31ba7fcbfc1:/faceml# python detectface_keras.py --help
+root@2ce5a5365ba9:/faceml# python detectface_keras.py --help
 Using TensorFlow backend.
-usage: detectface_keras.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS
-                           [-p [MARGIN]] -o OUTDIR [-l LOGDIR]
+usage: detectface_keras.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
+                           [-p [MARGIN]] [-k [CONFIDENCE]] -o OUTDIR
+                           [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -130,10 +162,15 @@ optional arguments:
                         path to input directory of images
   -m MODELPATH, --modelpath MODELPATH
                         directory with trained model
-  -c CLASS, --class CLASS
-                        class name to filter (class1,class2,...)
+  -c PERSON, --person PERSON
+                        person name expression to filter - <name1> | not
+                        [name1] | [name1] and [name2] | [name1] and ([name2]
+                        or [name3]) and not [name4] etc
   -p [MARGIN], --margin [MARGIN]
                         margin percentage pixels to include around the face
+  -k [CONFIDENCE], --confidence [CONFIDENCE]
+                        minimum confidence percentage for face recognition.
+                        Default 70
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
@@ -161,9 +198,9 @@ optional arguments:
 ```
 * To detect faces and move files (using OpenCV/Caffe)
 ```
-root@b31ba7fcbfc1:/faceml# python detectface_cv2.py --help
-usage: detectface_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c CLASS [-p [MARGIN]]
-                         -o OUTDIR [-l LOGDIR]
+root@2ce5a5365ba9:/faceml# python detectface_cv2.py --help
+usage: detectface_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
+                         [-p [MARGIN]] [-k [CONFIDENCE]] -o OUTDIR [-l LOGDIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -171,10 +208,15 @@ optional arguments:
                         path to input directory of images
   -m MODELPATH, --modelpath MODELPATH
                         directory with trained model
-  -c CLASS, --class CLASS
-                        class name to filter (class1,class2,...)
+  -c PERSON, --person PERSON
+                        person name expression to filter - <name1> | not
+                        [name1] | [name1] and [name2] | [name1] and ([name2]
+                        or [name3]) and not [name4] etc
   -p [MARGIN], --margin [MARGIN]
                         margin percentage pixels to include around the face
+  -k [CONFIDENCE], --confidence [CONFIDENCE]
+                        minimum confidence percentage for face recognition.
+                        Default 70
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
@@ -201,17 +243,18 @@ optional arguments:
 ## Example
 I have the combined training/detection code as jupyter notebooks for both methods. Review the end of both files below for results. 
 
-* [Object Detection](faceml/notebooks/OD.ipynb)
-* [Face Detection using Keras](faceml/notebooks/FD_keras.ipynb)
-* [Face Detection using cv2](faceml/notebooks/FD_cv2.ipynb)
+* [Object Detection](faceml/notebooks/objectdetect.ipynb)
+* [Detect similar images](faceml/notebooks/detectsimilar.ipynb)
+* [Face Detection using Keras](faceml/notebooks/detectface_keras.ipynb)
+* [Face Detection using cv2](faceml/notebooks/detectface_cv2.ipynb)
 
 ## Credits/References:
-https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/
+https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/  
 https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/
-https://pjreddie.com/darknet/yolo/
-https://mc.ai/face-detection-with-opencv-and-deep-learning/
-https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/
-http://cmusatyalab.github.io/openface/
-https://cmusatyalab.github.io/openface/models-and-accuracies/
+https://pjreddie.com/darknet/yolo/  
+https://mc.ai/face-detection-with-opencv-and-deep-learning/  
+https://sb-nj-wp-prod-1.pyimagesearch.com/2018/09/24/opencv-face-recognition/  
+http://cmusatyalab.github.io/openface/  
+https://cmusatyalab.github.io/openface/models-and-accuracies/  
 
 

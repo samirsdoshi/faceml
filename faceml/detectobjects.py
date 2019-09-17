@@ -12,8 +12,6 @@ from PIL import Image
 
 import argparse
 import random
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 from util import *
 import logging
 
@@ -38,7 +36,7 @@ def detect_objects(image, boxes, scores, classes, yolo_model, input_image_shape)
 def parse_args(portraitDiffDefault,groupDiffDefault):
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--imagedir", required=True, help="path to input directory of images")
-    ap.add_argument("-c", "--class", required=True, help="object class to search for as per yolo_keras/coco_classes.txt")
+    ap.add_argument("-c", "--class", required=True, help="object class expression to search for as per yolo_keras/coco_classes.txt")
     ap.add_argument("-k", "--confidence", required=False, nargs='?', const=80, type=int, default=80, help="minimum confidence percentage for object detection. Default 80")
     ap.add_argument("-s", "--size", required=False, nargs='?', const=0, type=float, default=0, help="minimum percentage size of the object in the image.")
     ap.add_argument("-n", "--count", required=False, nargs='?', const=0, type=int, default=0, help="select images containing n count of class object")
@@ -88,18 +86,18 @@ def checkGroupOrSelfie(areasDiff, groupDiff):
     return (countOverGroupDiff==0), (countOverGroupDiff==1) 
 
 
-def getBoxAreas(objects, out_classes, classname, out_scores, out_boxes, image_area, requiredConfidence, requiredSize):
+def getBoxAreas(objects, out_classes, classes, out_scores, out_boxes, image_area, requiredConfidence, requiredSize):
     matchedConfidence=0
     matchedSize=0
     areas = []
     for i in range(len(out_classes)):
-        if (objects[i]==classname and out_scores[i]*100>=requiredConfidence):
+        if (objects[i] in classes and out_scores[i]*100>=requiredConfidence):
             matchedConfidence=matchedConfidence+1
             box_height=(out_boxes[i][2]-out_boxes[i][0])
             box_width=(out_boxes[i][3]-out_boxes[i][1])
             box_area=box_width*box_height
             areas.append(box_area)
-            if ((box_area/image_area)*100 > requiredSize):
+            if ((box_area/image_area)*100 >= requiredSize):
                 matchedSize=matchedSize+1
     return matchedConfidence, matchedSize, areas
 
@@ -126,7 +124,7 @@ def categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault,
         return False, isGroup, isSelfie  
 
     return (False,)*3
-            
+   
 def main(args, portraitDiffDefault,groupDiffDefault):
     
     logger = getLogger(args["logdir"], logfile)
@@ -140,6 +138,13 @@ def main(args, portraitDiffDefault,groupDiffDefault):
 
 
     imgcnt=1
+    classexpr=args["class"].lower()
+    requiredCount=int(args["count"])
+    requiredConfidence=int(args["confidence"])
+    requiredSize=args["size"]
+    portraitDiff=args["portrait"]
+    groupDiff=args["group"]
+
     for image_file in os.listdir(args["imagedir"]):
         
         # Load image
@@ -150,41 +155,43 @@ def main(args, portraitDiffDefault,groupDiffDefault):
             logger.error("Error loading " + img_path)
             continue
 
+        imgcnt=imgcnt+1
+
         # Resize image for model input
         image = letterbox_image(image, tuple(reversed(model_image_size)))
         iw, ih = image.size
         image_area=iw*ih
-
-        imgcnt=imgcnt+1
-        classname=args["class"]
-        requiredCount=int(args["count"])
-        requiredConfidence=int(args["confidence"])
-        requiredSize=args["size"]
-        portraitDiff=args["portrait"]
-        groupDiff=args["group"]
-
+        
         out_boxes, out_scores, out_classes = detect_objects(image, boxes, scores, classes,yolo_model,input_image_shape)
-
         objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
 
-        if classname!="" and (classname in objects):
-            matchedConfidence, matchedSize, areas = getBoxAreas(objects, out_classes, classname, out_scores, out_boxes, image_area, requiredConfidence, requiredSize)
-            logger.debug(img_path, ": Found ", matchedConfidence, " count of ", classname, " objects with ", matchedSize, " greater than ", requiredSize, "%")
-            if(len(areas) > 1):
-                isPortrait, isGroup, isSelfie = False, False, False
-                if (matchedSize > 0):
-                    isPortrait, isGroup, isSelfie = categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff)
-                    logger.debug("matched as portrait" if isPortrait else "matched as group" if isGroup else "matched as selfie" if isSelfie else "")
+        search_classes, not_classes, expr = processClassName(classexpr)
+        if (eval(expr)):
+            matchedConfidence, matchedSize, areas = 0,0,[]
+            isPortrait, isGroup, isSelfie = False, False, False
+            if (search_classes!=[]):
+                matchedConfidence, matchedSize, areas = getBoxAreas(objects, out_classes, search_classes, out_scores, out_boxes, image_area, requiredConfidence, requiredSize)
+                logger.info(img_path, ": Found ", matchedConfidence, " count of ", search_classes, " objects with ", matchedSize, " greater than ", requiredSize, "%")
+                if(len(areas) > 1):
+                    if (matchedSize > 0):
+                        isPortrait, isGroup, isSelfie = categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff)
+                        logger.debug("matched as portrait" if isPortrait else "matched as group" if isGroup else "matched as selfie" if isSelfie else "")
 
-                if (args["outdir"]!="" and matchedSize > 0 and (requiredCount==0 or matchedSize==requiredCount)
-                    and (portraitDiff==0 or isPortrait)
-                    and (groupDiff==0 or isGroup)):       
-                        target_path = os.path.join(args["outdir"], image_file)
-                        logger.debug("Moving ", img_path, " to ", target_path)
-                        os.rename(img_path, target_path)
+            if (not_classes!=[]):
+                logger.info(img_path, ": No ", not_classes, " objects found")
+
+            if (args["outdir"]!="" 
+                and (search_classes==[] or matchedSize > 0) 
+                and (requiredCount==0 or matchedSize==requiredCount)
+                and (portraitDiff==0 or isPortrait)
+                and (groupDiff==0 or isGroup)):       
+                    setupDir(args["outdir"])
+                    target_path = os.path.join(args["outdir"], image_file)
+                    logger.info("Moving ", img_path, " to ", target_path)
+                    os.rename(img_path, target_path)
 
         else:
-            logger.debug(img_path, ": No ", args["class"]," found")
+            logger.info(img_path, ": No (", args["class"],") found")
 
 if __name__ == '__main__':
     portraitDiffDefault=150

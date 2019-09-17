@@ -3,6 +3,8 @@ import sys
 import datetime
 from datetime import date
 import logging
+import numpy as np
+from numpy import asarray
 
 
 logfile = "faceml.log"
@@ -25,6 +27,10 @@ def logdebug(self, *args):
     line=''.join(str(args[i]) for i in range(len(args)))
     self.log(logging.DEBUG, line)
 
+def loginfo(self, *args):
+    line=''.join(str(args[i]) for i in range(len(args)))
+    self.log(logging.INFO, line)
+
 def logerror(self, *args):
     line=''.join(str(args[i]) for i in range(len(args)))
     self.log(logging.ERROR, line)
@@ -34,12 +40,13 @@ def getMyLogger():
 
 def getLogger(logdir, logfile):
     logger = logging.getLogger("faceml")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     ch = getLogHandler(logdir, logfile)
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     logger.addHandler(ch)
     logger.__class__.debug=logdebug
+    logger.__class__.info=loginfo
     logger.__class__.error=logerror
     return logger
 
@@ -70,3 +77,30 @@ def addMargin(startX,startY,endX,endY,margin):
     startY = int(startY - (startY*margin/100))
     endY = int(endY + (endY*margin/100))
     return startX,startY,endX,endY
+
+def setupDir(targetdir):
+    if not os.path.exists(targetdir):
+        os.makedirs(targetdir)
+
+def flatten(l): 
+    return flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else []) if type(l) is list else [l]
+
+def processClassName(classname):
+    classes=[]
+    notclasses=[]
+    if ("[" in classname):     
+        for k in classname.split("]"):
+            index=k.find("[")
+            if index!=-1:
+                tstr=k[index+1:]
+                if ("not" in k):
+                    notclasses.append(tstr)    
+                else:
+                    classes.append(tstr)
+
+        expr=classname.replace("[","('")
+        expr=expr.replace("]","' in objects)")
+    else:
+        classes=[classname]
+        expr="('" + classname + "' in objects)"        
+    return classes, notclasses, expr  

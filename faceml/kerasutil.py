@@ -3,6 +3,7 @@ from numpy import asarray
 from numpy import expand_dims
 from keras.models import load_model
 
+
 def load_keras_model():
     # load the model
     model_path = "/faceml/keras-facenet/model/facenet_keras.h5"
@@ -22,6 +23,8 @@ def load_image(filename):
     except Exception as e:
         print(str(e))
         return None
+
+
 
 def resize_image(src_image, size=(128,128)): 
     
@@ -52,4 +55,3 @@ def get_embedding(model, face_pixels):
     yhat = model.predict(samples)
     #print("yhat:",yhat.shape, yhat[0])
     return yhat[0]
-
