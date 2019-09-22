@@ -15,7 +15,7 @@ class TestDetectFaceKeras(unittest.TestCase):
          self.assertEqual(type(model), keras.engine.training.Model)    
     
     def test_extract_all_faces(self):
-        x1, y1, x2, y2, faces, pixels = extract_all_faces(MTCNN(), "/faceml/sampleimages/pierce1.jpg", 0)
+        x1, y1, x2, y2, faces, pixels = extract_all_faces(MTCNN(), load_image("/faceml/sampleimages/pierce1.jpg"), 0)
         self.assertEqual(len(x1), 5)
         self.assertEqual(len(y1), 5)
         self.assertEqual(asarray(faces).shape, (5, 160, 160, 3))

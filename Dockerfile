@@ -1,5 +1,6 @@
 FROM jupyter/tensorflow-notebook
 USER root
+ADD VERSION .
 RUN pip install PyQt5
 RUN pip install opencv-python
 RUN pip install --upgrade scikit-image

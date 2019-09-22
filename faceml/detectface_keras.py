@@ -16,7 +16,10 @@ from sklearn.preprocessing import Normalizer
 from numpy import expand_dims
 from numpy import asarray
 from mtcnn.mtcnn import MTCNN
+from yolo_keras.utils import *
+from yolo_keras.model import *
 from kerasutil import *
+from yoloutil import *
 from util import *
 import logging
 
@@ -36,15 +39,10 @@ def parse_args():
 
 
 # extract all faces from a given photograph
-def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
+def extract_all_faces(detector, pixels, margin, required_size=(160, 160)):
     logger = getMyLogger()
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
-    # load image from file
-    # convert to array
-    pixels = load_image(filename)
-    if (pixels is None):
-        return None,None,None,None,None,None
     # detect faces in the image
     results = detector.detect_faces(pixels)
    # extract the bounding box from the first face
@@ -61,7 +59,6 @@ def extract_all_faces(detector, filename, margin, required_size=(160, 160)):
                 startX,startY,endX,endY = addMargin(startX,startY,endX,endY,margin)
             face = pixels[startY:endY, startX:endX]
             (fH, fW) = face.shape[:2]
-            logger.debug(i, x,y,width,height,fH,fW)
             if fW < 10 or fH < 10:
                 continue
             x1.append(startX)
@@ -106,6 +103,11 @@ def retryPred(x1,y1,x2,y2,pixels,model,in_encoder,recognizer, required_size=(160
 def main(args):
     logger = getLogger(args["logdir"], logfile)
 
+    class_names, anchors, yolo_model = open_yolo_model()
+    input_image_shape = K.placeholder(shape=(2, ))
+    boxes, scores, classes = yolo_eval(yolo_model.output, anchors, len(class_names), input_image_shape,
+                                        score_threshold=0.3, iou_threshold=0.45)
+
     model =load_keras_model()
     detector = MTCNN()
     recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
@@ -120,11 +122,23 @@ def main(args):
         # Load image
         img_path = os.path.join(args["imagesdir"], image_file)
         logger.debug(img_path)
-        x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, img_path, int(args["margin"]))
+        image = load_image(img_path)
+        if (image is None):
+            logger.error("Error loading " + img_path)
+            continue
+
+        x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, image, int(args["margin"]))
         if (x1 is None):
             continue
         logger.debug( "candidate classes found:", len(x1))
-        objects=[]
+
+        image = letterbox_image(image, tuple(reversed(model_image_size)))
+        iw, ih = image.size
+        image_area=iw*ih
+        
+        out_boxes, out_scores, out_classes = detect_objects(image, boxes, scores, classes,yolo_model,input_image_shape)
+        objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
+
         for i in range(len(faces)):
             yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)
             logger.debug( yhat_class, yhat_prob)

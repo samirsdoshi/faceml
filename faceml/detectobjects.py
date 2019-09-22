@@ -3,35 +3,19 @@ import sys
 import numpy as np
 
 from keras import backend as K
-from keras.models import load_model
 from keras.layers import Input
-
 from yolo_keras.utils import *
 from yolo_keras.model import *
+
 from PIL import Image
 
 import argparse
 import random
 from util import *
+from kerasutil import *
+from yoloutil import *
 import logging
 
-def detect_objects(image, boxes, scores, classes, yolo_model, input_image_shape):
-    
-    # normalize and reshape image data
-    image_data = np.array(image, dtype='float32')
-    image_data /= 255.
-    image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-
-    # Predict classes and locations using Tensorflow session
-    sess = K.get_session()
-    out_boxes, out_scores, out_classes = sess.run(
-                [boxes, scores, classes],
-                feed_dict={
-                    yolo_model.input: image_data,
-                    input_image_shape: [image.size[1], image.size[0]],
-                    K.learning_phase(): 0
-                })
-    return out_boxes, out_scores, out_classes
 
 def parse_args(portraitDiffDefault,groupDiffDefault):
     ap = argparse.ArgumentParser()
@@ -45,35 +29,6 @@ def parse_args(portraitDiffDefault,groupDiffDefault):
     ap.add_argument("-o", "--outdir", required=False, default="", help="path to output directory where selected images will be moved")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
     return vars(ap.parse_args())
-
-def open_model():
-    anchors_path = "/faceml/yolo_keras/yolo_anchors.txt"
-    classes_path = "/faceml/yolo_keras/coco_classes.txt"
-    model_path="/faceml/yolo_keras/yolo.h5"
-
-    # Get the anchor box coordinates for the model
-
-    with open(anchors_path) as f:
-        anchors = f.readline()
-        anchors = [float(x) for x in anchors.split(',')]
-        anchors = np.array(anchors).reshape(-1, 2)
-
-    # Get the COCO classes on which the model was trained
-
-    with open(classes_path) as f:
-        class_names = f.readlines()
-        class_names = [c.strip() for c in class_names] 
-
-    # Create YOLO model
-    #home = os.path.expanduser("~")
-    #model_path = os.path.join(home, "yolo.h5")
-    yolo_model = load_model(model_path, compile=False)
-
-    # Generate output tensor targets for bounding box predictions
-    # Predictions for individual objects are based on a detection probability threshold of 0.3
-    # and an IoU threshold for non-max suppression of 0.45
-
-    return class_names, anchors,  yolo_model
 
 def checkPortrait(areasDiff, requiredCount, portraitDiff):
     return (areasDiff[requiredCount-1]*100 > portraitDiff)
@@ -131,7 +86,7 @@ def main(args, portraitDiffDefault,groupDiffDefault):
 
     # Set the expected image size for the model
     model_image_size = (416, 416)
-    class_names, anchors, yolo_model = open_model()
+    class_names, anchors, yolo_model = open_yolo_model()
     input_image_shape = K.placeholder(shape=(2, ))
     boxes, scores, classes = yolo_eval(yolo_model.output, anchors, len(class_names), input_image_shape,
                                         score_threshold=0.3, iou_threshold=0.45)

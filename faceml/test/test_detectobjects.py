@@ -13,7 +13,7 @@ from detectobjects import *
 class TestDO(unittest.TestCase):
             
     def test_openmodel(self):
-        class_names, anchors, yolo_model = open_model()
+        class_names, anchors, yolo_model = open_yolo_model()
         self.assertEqual(asarray(class_names).size, 80)
         self.assertEqual(asarray(anchors).size, 18)
         return class_names, anchors, yolo_model
@@ -47,43 +47,50 @@ class TestDO(unittest.TestCase):
     def test_processClassName(self):
 
         classname="person"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person"])
+        search_classes, not_classes, expr = processClassName(classname)
+        self.assertEqual(search_classes,["person"])
+        self.assertEqual(not_classes,[])
         self.assertEqual(expr,"('person' in objects)")
 
 
         classname="[person]"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person"])
+        search_classes, not_classes, expr= processClassName(classname)
+        self.assertEqual(search_classes,["person"])
+        self.assertEqual(not_classes,[])
         self.assertEqual(expr,"('person' in objects)")
 
 
         classname="not [person]"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person"])
+        search_classes, not_classes, expr = processClassName(classname)
+        self.assertEqual(search_classes,[])
+        self.assertEqual(not_classes,["person"])
         self.assertEqual(expr,"not ('person' in objects)")
 
 
         classname="[person] and [flower]"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person","flower"])
+        search_classes, not_classes, expr = processClassName(classname)
+        self.assertEqual(search_classes,["person","flower"])
+        self.assertEqual(not_classes,[])
         self.assertEqual(expr,"('person' in objects) and ('flower' in objects)")
 
         classname="[person] and [flower] and not [bird]"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person","flower","bird"])
+        search_classes, not_classes, expr= processClassName(classname)
+        self.assertEqual(search_classes,["person","flower"])
+        self.assertEqual(not_classes, ["bird"])
         self.assertEqual(expr,"('person' in objects) and ('flower' in objects) and not ('bird' in objects)")
 
 
         classname="([person] and [flower]) or [bird]"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person","flower","bird"])
+        search_classes, not_classes, expr = processClassName(classname)
+        self.assertEqual(search_classes,["person","flower","bird"])
+        self.assertEqual(not_classes,[])
         self.assertEqual(expr,"(('person' in objects) and ('flower' in objects)) or ('bird' in objects)")
 
 
         classname="([person] and [car]) or ([flower] and [bird])"
-        classes, expr = processClassName(classname)
-        self.assertEqual(classes,["person","car","flower","bird"])
+        search_classes, not_classes, expr= processClassName(classname)
+        self.assertEqual(search_classes,["person","car","flower","bird"])
+        self.assertEqual(not_classes,[])
         self.assertEqual(expr,"(('person' in objects) and ('car' in objects)) or (('flower' in objects) and ('bird' in objects))")
 
 

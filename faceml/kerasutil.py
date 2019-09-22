@@ -1,8 +1,9 @@
 from PIL import Image
+import numpy as np
 from numpy import asarray
 from numpy import expand_dims
 from keras.models import load_model
-
+from keras import backend as K
 
 def load_keras_model():
     # load the model
@@ -23,7 +24,6 @@ def load_image(filename):
     except Exception as e:
         print(str(e))
         return None
-
 
 
 def resize_image(src_image, size=(128,128)): 
@@ -55,3 +55,21 @@ def get_embedding(model, face_pixels):
     yhat = model.predict(samples)
     #print("yhat:",yhat.shape, yhat[0])
     return yhat[0]
+
+def detect_objects(image, boxes, scores, classes, yolo_model, input_image_shape):
+    
+    # normalize and reshape image data
+    image_data = np.array(image, dtype='float32')
+    image_data /= 255.
+    image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+    # Predict classes and locations using Tensorflow session
+    sess = K.get_session()
+    out_boxes, out_scores, out_classes = sess.run(
+                [boxes, scores, classes],
+                feed_dict={
+                    yolo_model.input: image_data,
+                    input_image_shape: [image.size[1], image.size[0]],
+                    K.learning_phase(): 0
+                })
+    return out_boxes, out_scores, out_classes
