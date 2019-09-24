@@ -112,7 +112,7 @@ def main(args):
     detector = MTCNN()
     recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
     out_encoder = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").read())
-
+    model_image_size = (416, 416)
     filesmoved=0
     in_encoder = Normalizer(norm='l2')
 
@@ -122,22 +122,26 @@ def main(args):
         # Load image
         img_path = os.path.join(args["imagesdir"], image_file)
         logger.debug(img_path)
-        image = load_image(img_path)
-        if (image is None):
-            logger.error("Error loading " + img_path)
+        try:
+            orgimage = Image.open(img_path)
+        except Exception as e:
+            logger.error("Error loading " + img_path)   
             continue
 
-        x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, image, int(args["margin"]))
+        #scale image
+        image, scale, xpad, ypad= scale_image(orgimage, tuple(reversed(model_image_size)))
+        out_boxes, out_scores, out_classes = detect_objects(image, boxes, scores, classes,yolo_model,input_image_shape)
+        objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
+        
+        #get enclosing area and transpose on original image
+        px1, py1, px2, py2 = getEnclosingArea(objects, "[person]", out_boxes)
+        newX1, newY1, newX2, newY2 = transpose(px1,py1,px2,py2,xpad,ypad,scale)
+        personimage = asarray(orgimage)[newY1:newY2, newX1:newX2]
+        
+        x1, y1, x2, y2, faces, pixels = extract_all_faces(detector, personimage, int(args["margin"]))
         if (x1 is None):
             continue
         logger.debug( "candidate classes found:", len(x1))
-
-        image = letterbox_image(image, tuple(reversed(model_image_size)))
-        iw, ih = image.size
-        image_area=iw*ih
-        
-        out_boxes, out_scores, out_classes = detect_objects(image, boxes, scores, classes,yolo_model,input_image_shape)
-        objects=[class_names[out_classes[i]] for i in range(len(out_classes))]
 
         for i in range(len(faces)):
             yhat_class, yhat_prob = retryPred(x1[i],y1[i],x2[i],y2[i],pixels,model,in_encoder,recognizer)

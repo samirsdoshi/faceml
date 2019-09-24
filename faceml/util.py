@@ -42,7 +42,7 @@ def getLogger(logdir, logfile):
     logger = logging.getLogger("faceml")
     logger.setLevel(logging.INFO)
     ch = getLogHandler(logdir, logfile)
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     logger.addHandler(ch)
     logger.__class__.debug=logdebug

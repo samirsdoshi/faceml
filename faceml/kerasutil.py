@@ -4,6 +4,7 @@ from numpy import asarray
 from numpy import expand_dims
 from keras.models import load_model
 from keras import backend as K
+import math
 
 def load_keras_model():
     # load the model
@@ -73,3 +74,32 @@ def detect_objects(image, boxes, scores, classes, yolo_model, input_image_shape)
                     K.learning_phase(): 0
                 })
     return out_boxes, out_scores, out_classes
+
+def scale_image(image, size):
+    iw, ih = image.size
+    w, h = size
+    scale = min(w/iw, h/ih)
+    nw = int(iw*scale)
+    nh = int(ih*scale)
+    xpad, ypad=(w-nw)//2,(h-nh)//2
+    image = image.resize((nw,nh), Image.BICUBIC)
+    new_image = Image.new('RGB', size, (128,128,128))
+    new_image.paste(image, (xpad, ypad))
+    return new_image, scale, xpad, ypad
+
+def getEnclosingArea(objects, classes, out_boxes):
+    x1, y1, x2, y2 =100000,100000,0,0
+    for i in range(len(out_boxes)):
+        if (objects[i] in classes):
+            y1 = min(y1, out_boxes[i][0])
+            x1 = min(x1, out_boxes[i][1])
+            y2 = max(y2, out_boxes[i][2])    
+            x2 = max(x2, out_boxes[i][3])
+    return math.floor(x1), math.floor(y1), math.ceil(x2), math.ceil(y2)
+
+def transpose(x1,y1,x2,y2,xpad,ypad,scale):
+    newX1 = int((x1-xpad)/scale)
+    newX2 = int((x2-xpad)/scale)
+    newY1 = int((y1-ypad)/scale)
+    newY2 = int((y2-ypad)/scale)
+    return newX1, newY1, newX2, newY2
