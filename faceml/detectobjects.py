@@ -28,6 +28,7 @@ def parse_args(portraitDiffDefault,groupDiffDefault):
     ap.add_argument("-g", "--group", required=False, nargs='?', const=groupDiffDefault, type=int, default=0, help="group mode. select images only if n count objects are within g percentage")
     ap.add_argument("-o", "--outdir", required=False, default="", help="path to output directory where selected images will be moved")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
     return vars(ap.parse_args())
 
 def checkPortrait(areasDiff, requiredCount, portraitDiff):
@@ -82,7 +83,7 @@ def categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault,
    
 def main(args, portraitDiffDefault,groupDiffDefault):
     
-    logger = getLogger(args["logdir"], logfile)
+    logger = getLogger(args["logdir"], args["log_level"], logfile)
 
     # Set the expected image size for the model
     model_image_size = (416, 416)
@@ -104,9 +105,8 @@ def main(args, portraitDiffDefault,groupDiffDefault):
         
         # Load image
         img_path = os.path.join(args["imagedir"], image_file)
-        try:
-            image = Image.open(img_path)
-        except:
+        image = load_image(img_path)
+        if(image is None):
             logger.error("Error loading " + img_path)
             continue
 
@@ -127,15 +127,14 @@ def main(args, portraitDiffDefault,groupDiffDefault):
             if (search_classes!=[]):
                 matchedConfidence, matchedSize, areas = getBoxAreas(objects, out_classes, search_classes, out_scores, out_boxes, image_area, requiredConfidence, requiredSize)
                 logger.info(img_path, ": Found ", matchedConfidence, " count of ", search_classes, " objects with ", matchedSize, " greater than ", requiredSize, "%")
-                if(len(areas) > 1):
-                    if (matchedSize > 0):
-                        isPortrait, isGroup, isSelfie = categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff)
-                        logger.debug("matched as portrait" if isPortrait else "matched as group" if isGroup else "matched as selfie" if isSelfie else "")
+                if(len(areas) > 1 and matchedSize > 0):
+                    isPortrait, isGroup, isSelfie = categorizeImage(areas, requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff)
+                    logger.debug("matched as portrait" if isPortrait else "matched as group" if isGroup else "matched as selfie" if isSelfie else "")
 
             if (not_classes!=[]):
                 logger.info(img_path, ": No ", not_classes, " objects found")
 
-            if (args["outdir"]!="" 
+            if (len(args["outdir"].strip())>0
                 and (search_classes==[] or matchedSize > 0) 
                 and (requiredCount==0 or matchedSize==requiredCount)
                 and (portraitDiff==0 or isPortrait)

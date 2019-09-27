@@ -44,6 +44,7 @@ def parse_args():
     ap.add_argument("-t", "--threshold", required=False, nargs='?', const=70, type=int, default=70, help="minimum confidence percentage for similarity. Default 70")    
     ap.add_argument("-o", "--outdir", required=False, default="", help="path to output directory where selected images will be moved")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
     return vars(ap.parse_args())
 
 def open_model():
@@ -127,7 +128,7 @@ def compareImages(model, img_areas1, img_areas2, x):
 
 def main(args):
     
-    logger = getLogger(args["logdir"], logfile)
+    logger = getLogger(args["logdir"], args["log_level"], logfile)
 
     # Set the expected image size for the model
     class_names, anchors, yolo_model = open_model()
@@ -177,7 +178,7 @@ def main(args):
                 similarfiles[filenames[i]].append(filenames[j])   
                 filestoskip.append(filenames[j]) 
 
-    if(args["outdir"]!=""):
+    if(len(args["outdir"].strip())>0):
         setupDir(args["outdir"])
         for orgfile in similarfiles:
             newOutDir = args["outdir"] + "/" + os.path.splitext(orgfile)[0]

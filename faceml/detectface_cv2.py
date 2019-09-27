@@ -27,8 +27,9 @@ def parse_args():
     ap.add_argument("-c", "--person", required=True, help="person name expression to filter -  <name1> | not [name1] | [name1] and [name2] | [name1] and ([name2] or [name3]) and not [name4] etc")
     ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
     ap.add_argument("-k", "--confidence", required=False, nargs='?', const=70, type=int, default=70, help="minimum confidence percentage for face recognition. Default 70")
-    ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store images having filter class")
+    ap.add_argument("-o", "--outdir", required=False, default="", help="path to output directory to store images having filter class")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
     return vars(ap.parse_args())
 
     
@@ -97,7 +98,7 @@ def retryPred(x1,y1,x2,y2,pixels,embedder,recognizer):
     return max_yhat_prob
 
 def main(args):
-    logger = getLogger(args["logdir"], logfile)
+    logger = getLogger(args["logdir"], args["log_level"], logfile)
 
     model =load_caffe_model()
     embedder =load_embedder()
@@ -127,7 +128,7 @@ def main(args):
 
         if(eval(expr)):
             logger.info("MATCH:",img_path)
-            if args["outdir"]!="":
+            if len(args["outdir"].strip())>0:
                 setupDir(args["outdir"])
                 target_path = os.path.join(args["outdir"], image_file)
                 logger.info( "Moving ", img_path, " to ", target_path)

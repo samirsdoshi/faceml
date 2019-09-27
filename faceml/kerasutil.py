@@ -87,19 +87,28 @@ def scale_image(image, size):
     new_image.paste(image, (xpad, ypad))
     return new_image, scale, xpad, ypad
 
-def getEnclosingArea(objects, classes, out_boxes):
-    x1, y1, x2, y2 =100000,100000,0,0
+def getBoxArea(out_box):
+    return (out_box[3]-out_box[1]) * (out_box[2]-out_box[0])
+
+def getEnclosingArea(objects, classes, out_boxes, image_size, requiredSize):
+    w,h=image_size
+    image_area=w*h
+    x1, y1, x2, y2 =w+1,h+1,0,0
+    classcount=0
     for i in range(len(out_boxes)):
-        if (objects[i] in classes):
-            y1 = min(y1, out_boxes[i][0])
-            x1 = min(x1, out_boxes[i][1])
-            y2 = max(y2, out_boxes[i][2])    
-            x2 = max(x2, out_boxes[i][3])
-    return math.floor(x1), math.floor(y1), math.ceil(x2), math.ceil(y2)
+        area = getBoxArea(out_boxes[i])
+        if (area/image_area)*100 > requiredSize:
+            if (objects[i] in classes):
+                classcount=classcount+1
+                y1 = max(0, min(y1, out_boxes[i][0]))
+                x1 = max(0, min(x1, out_boxes[i][1]))
+                y2 = min(h, max(y2, out_boxes[i][2]))    
+                x2 = min(w, max(x2, out_boxes[i][3]))
+    return classcount, math.floor(x1), math.floor(y1), math.ceil(x2), math.ceil(y2)
 
 def transpose(x1,y1,x2,y2,xpad,ypad,scale):
-    newX1 = int((x1-xpad)/scale)
-    newX2 = int((x2-xpad)/scale)
-    newY1 = int((y1-ypad)/scale)
-    newY2 = int((y2-ypad)/scale)
+    newX1 = max(0,int((x1-xpad)/scale))
+    newX2 = max(0,int((x2-xpad)/scale))
+    newY1 = max(0,int((y1-ypad)/scale))
+    newY2 = max(0,int((y2-ypad)/scale))
     return newX1, newY1, newX2, newY2

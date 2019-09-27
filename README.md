@@ -43,11 +43,11 @@ http://localhost:8888/?token=<i>token</i>
 ##### Command Lines
 * To detect various types of [objects](yolo_keras/coco_classes.txt) and move images with objects in a seperate folder
 ```
-root@2ce5a5365ba9:/faceml# python detectobjects.py --help
+root@afc13fdc17ef:/faceml# python detectobjects.py --help
 Using TensorFlow backend.
 usage: detectobjects.py [-h] -i IMAGEDIR -c CLASS [-k [CONFIDENCE]]
                         [-s [SIZE]] [-n [COUNT]] [-p [PORTRAIT]] [-g [GROUP]]
-                        [-o OUTDIR] [-l LOGDIR]
+                        [-o OUTDIR] [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -75,6 +75,8 @@ optional arguments:
                         moved
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 Class expression supports expressions like
 * person
@@ -89,10 +91,10 @@ Also you can find potrait photos of a single person and use it for training the 
 </br>
 * To detect similar images and group them under a folder, so that those can be reviewed and sorted appropriately.
 ```
-root@2ce5a5365ba9:/faceml# python detectsimilar.py --help
+root@afc13fdc17ef:/faceml# python detectsimilar.py --help
 Using TensorFlow backend.
 usage: detectsimilar.py [-h] -d IMAGEDIR [-c CLASS] [-t [THRESHOLD]]
-                        [-o OUTDIR] [-l LOGDIR]
+                        [-o OUTDIR] [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -109,12 +111,15 @@ optional arguments:
                         moved
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 * To extract faces from images and save as seperate files (could be used as inputs for training)
 ```
-root@2ce5a5365ba9:/faceml# python extract_faces.py --help
+root@afc13fdc17ef:/faceml# python extract_faces.py --help
 Using TensorFlow backend.
 usage: extract_faces.py [-h] -i IMAGESDIR -o OUTDIR [-p [MARGIN]] [-l LOGDIR]
+                        [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -126,14 +131,18 @@ optional arguments:
                         margin percentage pixels to include around the face
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 See [example](faceml/sampleimages/extractfaces/README.md)
+
+
 * To train model (using Keras/Facenet)
 ```
-root@b31ba7fcbfc1:/faceml# python train_keras.py --help
+root@7f87ba121d08:/faceml# python train_keras.py --help
 Using TensorFlow backend.
 usage: train_keras.py [-h] -t TRAINDIR [-p [MARGIN]] -v VALDIR -o OUTDIR
-                      [-l LOGDIR]
+                      [-l LOGDIR] [-g LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -147,14 +156,16 @@ optional arguments:
                         path to output directory to store trained model files
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -g LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 * To detect faces and move files (using Keras/Facenet)
 ```
-root@2ce5a5365ba9:/faceml# python detectface_keras.py --help
+root@7f87ba121d08:/faceml# python detectface_keras.py --help
 Using TensorFlow backend.
 usage: detectface_keras.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
-                           [-p [MARGIN]] [-k [CONFIDENCE]] -o OUTDIR
-                           [-l LOGDIR]
+                           [-p [MARGIN]] [-k [CONFIDENCE]] [-o OUTDIR]
+                           [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -176,12 +187,14 @@ optional arguments:
                         class
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 * To train model (using OpenCV/Caffe)
 ```
-root@b31ba7fcbfc1:/faceml# python train_cv2.py --help
+root@7f87ba121d08:/faceml# python train_cv2.py --help
 usage: train_cv2.py [-h] -t TRAINDIR -v VALDIR [-p [MARGIN]] -o OUTDIR
-                    [-l LOGDIR]
+                    [-l LOGDIR] [-g LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -195,12 +208,15 @@ optional arguments:
                         path to output directory to store trained model files
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -g LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 * To detect faces and move files (using OpenCV/Caffe)
 ```
-root@2ce5a5365ba9:/faceml# python detectface_cv2.py --help
+root@7f87ba121d08:/faceml# python detectface_cv2.py --help
 usage: detectface_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
-                         [-p [MARGIN]] [-k [CONFIDENCE]] -o OUTDIR [-l LOGDIR]
+                         [-p [MARGIN]] [-k [CONFIDENCE]] [-o OUTDIR]
+                         [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -222,11 +238,14 @@ optional arguments:
                         class
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 * Utility to sort images into folders on year/month/day (hierachical or flat directories)
 ```
-root@45df4a0417e8:/faceml# python sortimages.py --help
+root@7f87ba121d08:/faceml# python sortimages.py --help
 usage: sortimages.py [-h] -i IMAGEDIR -o OUTDIR -s SORTMODE -f FOLDERMODE
+                     [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -239,6 +258,10 @@ optional arguments:
                         m (month), d (day), ym, ymd
   -f FOLDERMODE, --foldermode FOLDERMODE
                         h (hierarchical) or f (flat)
+  -l LOGDIR, --logdir LOGDIR
+                        path to log directory
+  -v LOG_LEVEL, --loglevel LOG_LEVEL
+                        log level: DEBUG, INFO, ERROR. Default INFO
 ```
 ## Example
 I have the combined training/detection code as jupyter notebooks for both methods. Review the end of both files below for results. 

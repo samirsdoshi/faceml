@@ -22,6 +22,8 @@ def parse_args():
     ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store face images")
     ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
+
     return vars(ap.parse_args())
 
 
@@ -68,7 +70,7 @@ def extract_all_faces(model,filename,margin):
 
 
 def main(args):
-    logger=getLogger(args["logdir"], logfile)
+    logger=getLogger(args["logdir"], args["log_level"], logfile)
 
     model=load_caffe_model()
     imgcnt=1

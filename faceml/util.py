@@ -5,9 +5,10 @@ from datetime import date
 import logging
 import numpy as np
 from numpy import asarray
-
+import argparse
 
 logfile = "faceml.log"
+_LOG_LEVEL_STRINGS = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']
 
 def creation_date(path_to_file):
     """
@@ -22,6 +23,14 @@ def creation_date(path_to_file):
         # We're probably on Linux. No easy way to get creation dates here,
         # so we'll settle for when its content was last modified.
         return stat.st_mtime
+
+
+def log_level_string_to_int(log_level_string):
+    if not log_level_string in _LOG_LEVEL_STRINGS:
+        message = 'invalid choice: {0} (choose from {1})'.format(log_level_string, _LOG_LEVEL_STRINGS)
+        raise argparse.ArgumentTypeError(message)
+    log_level_int = getattr(logging, log_level_string, logging.INFO)
+    return log_level_int
 
 def logdebug(self, *args):
     line=''.join(str(args[i]) for i in range(len(args)))
@@ -38,11 +47,11 @@ def logerror(self, *args):
 def getMyLogger():
     return logging.getLogger("faceml")
 
-def getLogger(logdir, logfile):
+def getLogger(logdir, loglevel, logfile):
     logger = logging.getLogger("faceml")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(loglevel)
     ch = getLogHandler(logdir, logfile)
-    ch.setLevel(logging.INFO)
+    ch.setLevel(loglevel)
     ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     logger.addHandler(ch)
     logger.__class__.debug=logdebug

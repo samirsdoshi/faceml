@@ -15,6 +15,8 @@ def parse_args():
     ap.add_argument("-s", "--sortmode", required=True, help="sort mode (y,m,d,ym,ymd). Create folders by  y (year), m (month), d (day), ym, ymd")
     ap.add_argument("-f", "--foldermode", required=True, help="h (hierarchical) or f (flat)")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
+
     return vars(ap.parse_args())
 
 
@@ -38,7 +40,7 @@ def setupTargetDir(outdir, year, month, day, sortmode, foldermode):
     return targetDir
 
 def main(args):
-    logger = getLogger(args["logdir"], logfile)
+    logger = getLogger(args["logdir"], args["log_level"], logfile)
     for filename in listdir(args["imagedir"]):
         try:
             path = args["imagedir"] + "/" + filename

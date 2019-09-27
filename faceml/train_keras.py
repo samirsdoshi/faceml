@@ -30,6 +30,8 @@ def parse_args():
     ap.add_argument("-v", "--valdir", required=True, help="path to input directory of images for training")
     ap.add_argument("-o", "--outdir", required=True, help="path to output directory to store trained model files")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
+    ap.add_argument("-g", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
+
     return vars(ap.parse_args())
 
 
@@ -126,7 +128,7 @@ def load_dataset(detector,directory, margin):
 ## end of functions    
 
 def main(args):
-    logger =  getLogger(args["logdir"], logfile)
+    logger =  getLogger(args["logdir"], args["log_level"], logfile)
 
     detector = MTCNN()
     trainX, trainY = load_dataset(detector,args["traindir"],int(args["margin"]))
