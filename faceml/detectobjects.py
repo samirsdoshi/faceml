@@ -105,7 +105,7 @@ def main(args, portraitDiffDefault,groupDiffDefault):
         
         # Load image
         img_path = os.path.join(args["imagedir"], image_file)
-        image = load_image(img_path)
+        image = load_image(img_path, True)
         if(image is None):
             logger.error("Error loading " + img_path)
             continue

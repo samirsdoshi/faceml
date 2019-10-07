@@ -34,6 +34,7 @@ def parse_args():
     ap.add_argument("-p", "--margin", required=False,  nargs='?', const=0, type=int, default=0, help="margin percentage pixels to include around the face")
     ap.add_argument("-k", "--confidence", required=False, nargs='?', const=70, type=int, default=70, help="minimum confidence percentage for face recognition. Default 70")
     ap.add_argument("-o", "--outdir", required=False, default="", help="path to output directory to store images having filter class")
+    ap.add_argument("-n", "--nomatchdir", required=False, default="", help="directory to move image to, if not matched.")
     ap.add_argument("-l", "--logdir", required=False, default="", help="path to log directory")
     ap.add_argument("-v", "--loglevel", required=False, default="INFO", dest='log_level', type=log_level_string_to_int, help="log level: DEBUG, INFO, ERROR. Default INFO")
     return vars(ap.parse_args())
@@ -129,8 +130,8 @@ def main(args):
 
     model =load_keras_model()
     detector = MTCNN()
-    recognizer = pickle.loads(open(args["modelpath"] + recognizer_file, "rb").read())
-    out_encoder = pickle.loads(open(args["modelpath"] + labelencoder_file, "rb").read())
+    recognizer = pickle.loads(open(args["modelpath"] + "/" + recognizer_file, "rb").read())
+    out_encoder = pickle.loads(open(args["modelpath"] + "/" + labelencoder_file, "rb").read())
     model_image_size = (416, 416)
     filesmoved=0
     in_encoder = Normalizer(norm='l2')
@@ -141,6 +142,7 @@ def main(args):
         # Load image
         img_path = os.path.join(args["imagesdir"], image_file)
         logger.debug(img_path)
+        matched=False
         try:
             orgimage = Image.open(img_path)
 
@@ -168,13 +170,12 @@ def main(args):
                 
                 pImage=Image.fromarray(asarray(personimage))
                 oldobjects=objects.copy()
-                matched=False
                 for deg in [0,90,-90,180]:
                     objects=oldobjects.copy()
                     imgtouse=pImage
                     if deg!=0:
                         logger.debug("trying with rotation:", deg)
-                        imgtouse=pImage.rotate(deg)
+                        imgtouse=pImage.rotate(deg, expand=True)
                     extract_and_predict(detector,model,out_encoder,in_encoder,recognizer,asarray(imgtouse), int(args["margin"]), args["confidence"], objects)
                     matched=eval(expr)
                     if(matched):
@@ -194,6 +195,9 @@ def main(args):
             logger.error("Error " + img_path + ":" + str(e))   
             continue
 
+        if (not matched and args["nomatchdir"]!=""):
+            setupDir(args["nomatchdir"]) 
+            os.rename(img_path, os.path.join(args["nomatchdir"],image_file ))
     #end for
 
 if __name__ == '__main__':

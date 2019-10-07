@@ -6,9 +6,26 @@ import logging
 import numpy as np
 from numpy import asarray
 import argparse
+from PIL import Image
+
 
 logfile = "faceml.log"
 _LOG_LEVEL_STRINGS = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']
+
+def load_image(filename, asimg=False):
+    try:
+        image = Image.open(filename)
+        # convert to RGB, if needed
+        image = image.convert('RGB')
+        # convert to array
+        if asimg:
+            return image
+        else:    
+            pixels = asarray(image)
+            return pixels
+    except Exception as e:
+        print(str(e))
+        return None
 
 def creation_date(path_to_file):
     """

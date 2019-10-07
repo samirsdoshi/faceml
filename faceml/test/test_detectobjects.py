@@ -44,56 +44,6 @@ class TestDO(unittest.TestCase):
         self.assertEqual(asarray(areas).size,3)
         return matchedConfidence, matchedSize, areas
 
-    def test_processClassName(self):
-
-        classname="person"
-        search_classes, not_classes, expr = processClassName(classname)
-        self.assertEqual(search_classes,["person"])
-        self.assertEqual(not_classes,[])
-        self.assertEqual(expr,"('person' in objects)")
-
-
-        classname="[person]"
-        search_classes, not_classes, expr= processClassName(classname)
-        self.assertEqual(search_classes,["person"])
-        self.assertEqual(not_classes,[])
-        self.assertEqual(expr,"('person' in objects)")
-
-
-        classname="not [person]"
-        search_classes, not_classes, expr = processClassName(classname)
-        self.assertEqual(search_classes,[])
-        self.assertEqual(not_classes,["person"])
-        self.assertEqual(expr,"not ('person' in objects)")
-
-
-        classname="[person] and [flower]"
-        search_classes, not_classes, expr = processClassName(classname)
-        self.assertEqual(search_classes,["person","flower"])
-        self.assertEqual(not_classes,[])
-        self.assertEqual(expr,"('person' in objects) and ('flower' in objects)")
-
-        classname="[person] and [flower] and not [bird]"
-        search_classes, not_classes, expr= processClassName(classname)
-        self.assertEqual(search_classes,["person","flower"])
-        self.assertEqual(not_classes, ["bird"])
-        self.assertEqual(expr,"('person' in objects) and ('flower' in objects) and not ('bird' in objects)")
-
-
-        classname="([person] and [flower]) or [bird]"
-        search_classes, not_classes, expr = processClassName(classname)
-        self.assertEqual(search_classes,["person","flower","bird"])
-        self.assertEqual(not_classes,[])
-        self.assertEqual(expr,"(('person' in objects) and ('flower' in objects)) or ('bird' in objects)")
-
-
-        classname="([person] and [car]) or ([flower] and [bird])"
-        search_classes, not_classes, expr= processClassName(classname)
-        self.assertEqual(search_classes,["person","car","flower","bird"])
-        self.assertEqual(not_classes,[])
-        self.assertEqual(expr,"(('person' in objects) and ('car' in objects)) or (('flower' in objects) and ('bird' in objects))")
-
-
     def test_categorizeimage(self):
         requiredCount, portraitDiffDefault, groupDiffDefault, portraitDiff, groupDiff =0,150,100,0,0
         matchedConfidence, matchedSize, areas = self.test_boxareas()

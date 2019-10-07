@@ -14,18 +14,6 @@ def load_keras_model():
     model.load_weights(model_weights_path)
     return model
 
-def load_image(filename):
-    try:
-        image = Image.open(filename)
-        # convert to RGB, if needed
-        image = image.convert('RGB')
-        # convert to array
-        pixels = asarray(image)
-        return pixels
-    except Exception as e:
-        print(str(e))
-        return None
-
 
 def resize_image(src_image, size=(128,128)): 
     

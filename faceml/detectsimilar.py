@@ -135,6 +135,7 @@ def main(args):
     input_image_shape = K.placeholder(shape=(2, ))
     boxes, scores, classes = yolo_eval(yolo_model.output, anchors, len(class_names), input_image_shape,
                                         score_threshold=0.3, iou_threshold=0.45)
+    model = InceptionV3(weights='imagenet', include_top=False)
 
     classname=args["class"]
     img_areas, img_x, filenames =[],[],[]
@@ -160,7 +161,6 @@ def main(args):
     x=[]
     similarfiles={}
     filestoskip=[]        
-    model = InceptionV3(weights='imagenet', include_top=False)
     for i in range(len(filenames)-1):
         if filenames[i] in similarfiles:
             continue

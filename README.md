@@ -161,11 +161,11 @@ optional arguments:
 ```
 * To detect faces and move files (using Keras/Facenet)
 ```
-root@7f87ba121d08:/faceml# python detectface_keras.py --help
+root@87b636b3469e:/faceml# python detectface_keras.py --help
 Using TensorFlow backend.
 usage: detectface_keras.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
                            [-p [MARGIN]] [-k [CONFIDENCE]] [-o OUTDIR]
-                           [-l LOGDIR] [-v LOG_LEVEL]
+                           [-n NOMATCHDIR] [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -185,6 +185,8 @@ optional arguments:
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
+  -n NOMATCHDIR, --nomatchdir NOMATCHDIR
+                        directory to move image to, if not matched.
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
   -v LOG_LEVEL, --loglevel LOG_LEVEL
@@ -213,10 +215,9 @@ optional arguments:
 ```
 * To detect faces and move files (using OpenCV/Caffe)
 ```
-root@7f87ba121d08:/faceml# python detectface_cv2.py --help
 usage: detectface_cv2.py [-h] -i IMAGESDIR -m MODELPATH -c PERSON
                          [-p [MARGIN]] [-k [CONFIDENCE]] [-o OUTDIR]
-                         [-l LOGDIR] [-v LOG_LEVEL]
+                         [-n NOMATCHDIR] [-l LOGDIR] [-v LOG_LEVEL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -236,6 +237,8 @@ optional arguments:
   -o OUTDIR, --outdir OUTDIR
                         path to output directory to store images having filter
                         class
+  -n NOMATCHDIR, --nomatchdir NOMATCHDIR
+                        directory to move image to, if not matched.
   -l LOGDIR, --logdir LOGDIR
                         path to log directory
   -v LOG_LEVEL, --loglevel LOG_LEVEL

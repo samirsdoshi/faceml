@@ -36,9 +36,10 @@ def extract_all_faces(model,filename, margin):
     logger.info(filename)
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
-    (h,w,image) = load_image(filename)
+    image = load_image(filename)
     if (image is None):
         return (None,)*5
+    h,w=image.shape[:2]    
     blob = blob_from_image(image)
     model.setInput(blob)
     detections = model.forward()

@@ -33,9 +33,10 @@ def extract_all_faces(model,filename,margin):
     logger = getMyLogger()
     x1,y1,x2,y2 = list(),list(),list(),list()
     faces=list()
-    (h,w,image) = load_image(filename)
+    image = load_image(filename)
     if (image is None):
         return None
+    h,w=image.shape[:2]    
     blob = blob_from_image(image)
     model.setInput(blob)
     detections = model.forward()
@@ -59,7 +60,7 @@ def extract_all_faces(model,filename,margin):
                 endY = int(endY + (endY*margin/100))
                 face = image[startY:endY, startX:endX]
                 (fH, fW) = face.shape[:2]
-                if fW < 20 or fH < 20:
+                if fW < 10 or fH < 10:
                     continue
                 face_array = asarray(face)
                 faces.append(face_array)
