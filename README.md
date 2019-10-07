@@ -1,6 +1,6 @@
 ## Description
 
-<i>Please read the full [article](https://medium.com/p/521ce6fa5877/edit) on Medium.</i>
+<i>Please read the full article on [LinkedIn](https://www.linkedin.com/pulse/ai-saved-my-family-photos-samir-doshi/) or [Medium](https://medium.com/p/521ce6fa5877).</i>
 The github repo provides a docker image with necessary ML base models and python utilities for face recognition, with easy to use command-line api. 
 Each tool has a corresponding jupyter notebook so you can test with your images, tune parameters, or just visualize results. 
 
